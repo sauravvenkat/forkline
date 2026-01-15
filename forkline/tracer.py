@@ -44,8 +44,10 @@ class StepScope:
     tracer: Tracer
     name: str
     idx: int = field(default=0)
+    _previous_step_idx: Optional[int] = field(default=None, init=False, repr=False)
 
     def __enter__(self) -> "StepScope":
+        self._previous_step_idx = self.tracer._active_step_idx
         self.idx = self.tracer._next_step_idx
         self.tracer._next_step_idx += 1
         self.tracer._active_step_idx = self.idx
@@ -54,4 +56,4 @@ class StepScope:
 
     def __exit__(self, exc_type, exc, tb) -> None:
         self.tracer.store.end_step(self.tracer.run_id, self.idx)
-        self.tracer._active_step_idx = None
+        self.tracer._active_step_idx = self._previous_step_idx
