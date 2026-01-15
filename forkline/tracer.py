@@ -25,7 +25,9 @@ class Tracer:
     def step(self, name: str) -> "StepScope":
         return StepScope(tracer=self, name=name)
 
-    def record_event(self, name: str, payload: Optional[Dict[str, Any]] = None) -> Event:
+    def record_event(
+        self, name: str, payload: Optional[Dict[str, Any]] = None
+    ) -> Event:
         if self._active_step_idx is None:
             raise RuntimeError("No active step. Use tracer.step(...) context.")
         payload_dict = payload or {}
