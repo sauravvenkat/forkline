@@ -1,4 +1,6 @@
-# Forkline
+<p align="center">
+  <img src="docs/assets/forkline-wordmark.svg" alt="Forkline" width="420"/>
+</p>
 
 **Forkline** is a **local-first, replay-first tracing and diffing library for agentic AI workflows**.
 
