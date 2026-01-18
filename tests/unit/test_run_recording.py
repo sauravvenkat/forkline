@@ -11,6 +11,21 @@ from forkline.storage.recorder import RunRecorder
 class TestRunRecorder(unittest.TestCase):
     """Test suite for RunRecorder."""
 
+    def test_db_path_parent_directory_is_created(self):
+        """RunRecorder should create parent directory for db_path."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            nested_dir = os.path.join(tmpdir, "data")
+            db_path = os.path.join(nested_dir, "runs.db")
+
+            # 'data' does not exist yet; recorder init should create it.
+            self.assertFalse(os.path.exists(nested_dir))
+            recorder = RunRecorder(db_path=db_path)
+            self.assertTrue(os.path.isdir(nested_dir))
+
+            run_id = recorder.start_run(entrypoint="test.py")
+            run = recorder.get_run(run_id)
+            self.assertIsNotNone(run)
+
     def test_start_run_creates_versioned_record(self):
         """Test that starting a run creates a versioned record with env snapshot."""
         with tempfile.TemporaryDirectory() as tmpdir:

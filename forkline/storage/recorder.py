@@ -28,6 +28,9 @@ class RunRecorder:
     db_path: str = "runs.db"
 
     def __post_init__(self) -> None:
+        # Match SQLiteStore behavior: ensure parent directory exists.
+        # Without this, sqlite3.connect() fails if the directory is missing.
+        os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
