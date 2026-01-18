@@ -13,4 +13,3 @@ __all__ = [
     "diff_runs",
     "redact_text",
 ]
-

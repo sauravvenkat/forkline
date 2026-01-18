@@ -21,20 +21,20 @@ from typing import Any, Dict, Optional
 class RunRecorder:
     """
     Explicit, boring run recorder.
-    
+
     No decorators. No magic. Just append-only event logging.
     """
-    
+
     db_path: str = "runs.db"
-    
+
     def __post_init__(self) -> None:
         self._init_db()
-    
+
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
-    
+
     def _init_db(self) -> None:
         """Initialize runs.db with versioned schema."""
         with self._connect() as conn:
@@ -54,7 +54,7 @@ class RunRecorder:
                 )
                 """
             )
-            
+
             # Events table - append-only
             conn.execute(
                 """
@@ -68,7 +68,7 @@ class RunRecorder:
                 )
                 """
             )
-            
+
             # Index for fast event retrieval
             conn.execute(
                 """
@@ -76,11 +76,11 @@ class RunRecorder:
                 ON events(run_id, event_id)
                 """
             )
-    
+
     def _utc_now(self) -> str:
         """ISO8601 UTC timestamp."""
         return datetime.now(timezone.utc).isoformat()
-    
+
     def _capture_env(self) -> Dict[str, str]:
         """Capture environment snapshot."""
         return {
@@ -88,24 +88,24 @@ class RunRecorder:
             "platform": platform.platform(),
             "cwd": os.getcwd(),
         }
-    
+
     def start_run(self, entrypoint: str, run_id: Optional[str] = None) -> str:
         """
         Start a new run.
-        
+
         Args:
             entrypoint: Entry point identifier (e.g., "examples/minimal.py")
             run_id: Optional explicit run ID (generates UUID if not provided)
-        
+
         Returns:
             run_id
         """
         if run_id is None:
             run_id = uuid.uuid4().hex
-        
+
         started_at = self._utc_now()
         env = self._capture_env()
-        
+
         with self._connect() as conn:
             conn.execute(
                 """
@@ -124,9 +124,9 @@ class RunRecorder:
                     env["cwd"],
                 ),
             )
-        
+
         return run_id
-    
+
     def log_event(
         self,
         run_id: str,
@@ -135,18 +135,18 @@ class RunRecorder:
     ) -> int:
         """
         Log an event. Append-only.
-        
+
         Args:
             run_id: Run identifier
             event_type: Event type (input, output, tool_call, artifact_ref)
             payload: Event payload (will be JSON-serialized)
-        
+
         Returns:
             event_id
         """
         ts = self._utc_now()
         payload_json = json.dumps(payload, sort_keys=True)
-        
+
         with self._connect() as conn:
             cursor = conn.execute(
                 """
@@ -156,19 +156,19 @@ class RunRecorder:
                 (run_id, ts, event_type, payload_json),
             )
             event_id = cursor.lastrowid
-        
+
         return event_id
-    
+
     def end_run(self, run_id: str, status: str = "success") -> None:
         """
         End a run.
-        
+
         Args:
             run_id: Run identifier
             status: Final status (success, failure, error)
         """
         ended_at = self._utc_now()
-        
+
         with self._connect() as conn:
             conn.execute(
                 """
@@ -178,11 +178,11 @@ class RunRecorder:
                 """,
                 (ended_at, status, run_id),
             )
-    
+
     def get_run(self, run_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve a run by ID.
-        
+
         Returns:
             Run metadata as dict, or None if not found
         """
@@ -196,16 +196,16 @@ class RunRecorder:
                 """,
                 (run_id,),
             ).fetchone()
-            
+
             if row is None:
                 return None
-            
+
             return dict(row)
-    
+
     def get_events(self, run_id: str) -> list[Dict[str, Any]]:
         """
         Retrieve all events for a run, ordered by event_id.
-        
+
         Returns:
             List of events
         """
@@ -219,11 +219,11 @@ class RunRecorder:
                 """,
                 (run_id,),
             ).fetchall()
-            
+
             events = []
             for row in rows:
                 event = dict(row)
                 event["payload"] = json.loads(event["payload"])
                 events.append(event)
-            
+
             return events

@@ -57,46 +57,46 @@ def main():
         help="Show specific run ID",
     )
     args = parser.parse_args()
-    
+
     db_path = Path(args.db_path)
     if not db_path.exists():
         print(f"Error: {db_path} does not exist", file=sys.stderr)
-        print(f"Run examples/minimal.py first to create it", file=sys.stderr)
+        print("Run examples/minimal.py first to create it", file=sys.stderr)
         sys.exit(1)
-    
+
     recorder = RunRecorder(db_path=str(db_path))
-    
+
     if args.run_id:
         # Show specific run
         run = recorder.get_run(args.run_id)
         if run is None:
             print(f"Error: Run {args.run_id} not found", file=sys.stderr)
             sys.exit(1)
-        
+
         print("=" * 70)
         print(format_run(run))
         print("=" * 70)
-        
+
         events = recorder.get_events(args.run_id)
         print(f"\nEvents ({len(events)} total):")
         for i, event in enumerate(events, 1):
             print(format_event(event, i))
-    
+
     else:
         # Show all runs
         import sqlite3
-        
+
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
-        
+
         runs = conn.execute(
             "SELECT run_id, entrypoint, status, started_at FROM runs ORDER BY started_at DESC"
         ).fetchall()
-        
+
         if not runs:
             print("No runs found in database")
             sys.exit(0)
-        
+
         print(f"Found {len(runs)} run(s):\n")
         for i, row in enumerate(runs, 1):
             print(f"{i}. Run ID: {row['run_id']}")
@@ -104,9 +104,9 @@ def main():
             print(f"   Status: {row['status'] or 'running'}")
             print(f"   Started: {row['started_at']}")
             print()
-        
-        print(f"Use --run-id <run_id> to see details")
-        
+
+        print("Use --run-id <run_id> to see details")
+
         conn.close()
 
 
