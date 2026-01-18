@@ -54,7 +54,7 @@ python examples/minimal.py
 python scripts/inspect_runs.py
 ```
 
-See [`QUICKSTART_RECORDING_V0.md`](QUICKSTART_RECORDING_V0.md) for full getting started guide.
+See [`QUICKSTART_RECORDING_V0.md`](docs/QUICKSTART_RECORDING_V0.md) for full getting started guide.
 
 ---
 
@@ -69,6 +69,46 @@ Forkline is intentionally opinionated.
 - **Explicit schemas over implicit behavior**
 
 If a feature does not help reproduce, replay, or diff an agent run, it does not belong in Forkline.
+
+---
+
+## Security & Data Redaction
+
+Forkline is designed to be **safe by default** when handling sensitive data.
+
+### Core invariant
+
+> **By default, Forkline artifacts MUST NOT contain recoverable sensitive user, customer, or proprietary data.**
+
+This means:
+- **No raw LLM prompts or responses** are persisted by default
+- **Secrets are NEVER written to disk** in any mode
+- **PII and customer data** are redacted before persistence
+- **Redaction happens at capture time**, before any disk write
+
+### What IS recorded (SAFE mode)
+
+Forkline preserves everything needed for replay and diffing:
+- Step ordering and control flow
+- Tool and model identifiers
+- Timestamps and execution metadata
+- **Stable cryptographic hashes** of redacted values
+- Structural shape of inputs/outputs
+
+This enables deterministic replay, accurate diffing, and forensic debugging — without exposing sensitive data.
+
+### Escalation modes
+
+For development and debugging, Forkline supports explicit opt-in modes:
+- **SAFE** (default): Production-safe, full redaction
+- **DEBUG**: Local development, raw values persisted
+- **ENCRYPTED_DEBUG**: Encrypted payloads for break-glass production debugging
+
+### Full policy
+
+For the complete security design and redaction mechanisms, see:
+
+👉 [`docs/REDACTION_POLICY.md`](docs/REDACTION_POLICY.md)
 
 ---
 
