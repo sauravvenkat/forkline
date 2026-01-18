@@ -2,8 +2,9 @@ import os
 import tempfile
 import unittest
 
-from forkline import Tracer, replay
-from forkline.store import SQLiteStore
+from forkline.core import replay
+from forkline.storage import SQLiteStore
+from forkline.tracer import Tracer
 
 
 class SmokeTest(unittest.TestCase):

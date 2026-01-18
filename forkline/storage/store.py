@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Iterable, Optional
 
-from .types import Event, Run, Step
+from ..core.types import Event, Run, Step
 
 
 @dataclass

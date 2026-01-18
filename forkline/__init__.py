@@ -1,9 +1,6 @@
-from .diff import diff_runs
-from .redaction import redact_text
-from .replay import replay
-from .store import SQLiteStore
+from .core import Event, Run, Step, diff_runs, redact_text, replay
+from .storage import RunRecorder, SQLiteStore
 from .tracer import Tracer
-from .types import Event, Run, Step
 
 __all__ = [
     "Event",
@@ -11,6 +8,7 @@ __all__ = [
     "Step",
     "Tracer",
     "SQLiteStore",
+    "RunRecorder",
     "replay",
     "diff_runs",
     "redact_text",

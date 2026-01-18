@@ -40,6 +40,24 @@ This turns agent behavior into something you can reason about like code.
 
 ---
 
+## Quick Start
+
+```bash
+# Clone and setup
+cd forkline
+source dev.env
+
+# Run the example
+python examples/minimal.py
+
+# Inspect the recorded run
+python scripts/inspect_runs.py
+```
+
+See [`QUICKSTART_RECORDING_V0.md`](QUICKSTART_RECORDING_V0.md) for full getting started guide.
+
+---
+
 ## Design principles
 
 Forkline is intentionally opinionated.

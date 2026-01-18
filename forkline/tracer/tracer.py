@@ -4,8 +4,8 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from .store import SQLiteStore
-from .types import Event
+from ..core.types import Event
+from ..storage.store import SQLiteStore
 
 
 @dataclass
