@@ -90,7 +90,11 @@ def main():
         conn.row_factory = sqlite3.Row
 
         runs = conn.execute(
-            "SELECT run_id, entrypoint, status, started_at FROM runs ORDER BY started_at DESC"
+            """
+            SELECT run_id, entrypoint, status, started_at 
+            FROM runs 
+            ORDER BY started_at DESC
+            """
         ).fetchall()
 
         if not runs:
