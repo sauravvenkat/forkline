@@ -1,4 +1,14 @@
-from .core import Event, Run, Step, diff_runs, redact_text, replay
+from .core import (
+    Event,
+    RedactionAction,
+    RedactionPolicy,
+    RedactionRule,
+    Run,
+    Step,
+    create_default_policy,
+    diff_runs,
+    replay,
+)
 from .storage import RunRecorder, SQLiteStore
 from .tracer import Tracer
 
@@ -11,5 +21,8 @@ __all__ = [
     "RunRecorder",
     "replay",
     "diff_runs",
-    "redact_text",
+    "RedactionAction",
+    "RedactionPolicy",
+    "RedactionRule",
+    "create_default_policy",
 ]

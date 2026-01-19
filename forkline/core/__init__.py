@@ -1,7 +1,12 @@
 """Core types and logic for Forkline."""
 
 from .diff import diff_runs
-from .redaction import redact_text
+from .redaction import (
+    RedactionAction,
+    RedactionPolicy,
+    RedactionRule,
+    create_default_policy,
+)
 from .replay import replay
 from .types import Event, Run, Step
 
@@ -11,5 +16,8 @@ __all__ = [
     "Step",
     "replay",
     "diff_runs",
-    "redact_text",
+    "RedactionAction",
+    "RedactionPolicy",
+    "RedactionRule",
+    "create_default_policy",
 ]
