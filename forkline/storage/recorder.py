@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from forkline.core.redaction import RedactionPolicy, create_default_policy
+
 
 @dataclass
 class RunRecorder:
@@ -23,15 +25,23 @@ class RunRecorder:
     Explicit, boring run recorder.
 
     No decorators. No magic. Just append-only event logging.
+
+    Redaction is applied at the storage boundary: all event payloads are
+    redacted before being persisted to disk.
     """
 
     db_path: str = "runs.db"
+    redaction_policy: Optional[RedactionPolicy] = None
 
     def __post_init__(self) -> None:
         # Match SQLiteStore behavior: ensure parent directory exists.
         # Without this, sqlite3.connect() fails if the directory is missing.
         os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
         self._init_db()
+
+        # Use default SAFE mode policy if none provided
+        if self.redaction_policy is None:
+            self.redaction_policy = create_default_policy()
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
@@ -139,16 +149,24 @@ class RunRecorder:
         """
         Log an event. Append-only.
 
+        Redaction is applied at the storage boundary: the payload is redacted
+        before persistence. The input payload is never mutated.
+
         Args:
             run_id: Run identifier
             event_type: Event type (input, output, tool_call, artifact_ref)
-            payload: Event payload (will be JSON-serialized)
+            payload: Event payload (will be redacted and JSON-serialized)
 
         Returns:
             event_id
         """
         ts = self._utc_now()
-        payload_json = json.dumps(payload, sort_keys=True)
+
+        # Apply redaction at storage boundary
+        # This is security-critical: storage never sees raw payloads
+        redacted_payload = self.redaction_policy.redact(event_type, payload)
+
+        payload_json = json.dumps(redacted_payload, sort_keys=True)
 
         with self._connect() as conn:
             cursor = conn.execute(
