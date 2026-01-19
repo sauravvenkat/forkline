@@ -170,14 +170,12 @@ class RedactionPolicy:
         for rule in self.rules:
             # Check key_pattern (case-insensitive substring match)
             key_matches = (
-                rule.key_pattern is None
-                or rule.key_pattern.lower() in key.lower()
+                rule.key_pattern is None or rule.key_pattern.lower() in key.lower()
             )
 
             # Check path_pattern (case-insensitive substring match)
             path_matches = (
-                rule.path_pattern is None
-                or rule.path_pattern.lower() in path.lower()
+                rule.path_pattern is None or rule.path_pattern.lower() in path.lower()
             )
 
             # Both must match (if specified)

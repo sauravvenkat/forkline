@@ -52,8 +52,7 @@ class RunRecorder:
         """Initialize runs.db with versioned schema."""
         with self._connect() as conn:
             # Runs table with versioned schema
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS runs (
                     run_id TEXT PRIMARY KEY,
                     schema_version TEXT NOT NULL DEFAULT '0.1',
@@ -65,12 +64,10 @@ class RunRecorder:
                     platform TEXT NOT NULL,
                     cwd TEXT NOT NULL
                 )
-                """
-            )
+                """)
 
             # Events table - append-only
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS events (
                     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     run_id TEXT NOT NULL,
@@ -79,16 +76,13 @@ class RunRecorder:
                     payload TEXT NOT NULL,
                     FOREIGN KEY (run_id) REFERENCES runs(run_id)
                 )
-                """
-            )
+                """)
 
             # Index for fast event retrieval
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_events_run_id 
                 ON events(run_id, event_id)
-                """
-            )
+                """)
 
     def _utc_now(self) -> str:
         """ISO8601 UTC timestamp."""

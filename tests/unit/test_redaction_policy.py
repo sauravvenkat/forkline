@@ -238,9 +238,7 @@ class TestRedactionPolicy(unittest.TestCase):
         # Original should be unchanged
         self.assertEqual(original_payload, payload_before)
         self.assertEqual(original_payload["secret_key"], "sensitive_value")
-        self.assertEqual(
-            original_payload["nested"]["secret_key"], "nested_sensitive"
-        )
+        self.assertEqual(original_payload["nested"]["secret_key"], "nested_sensitive")
 
         # Redacted should be different
         self.assertEqual(redacted["secret_key"], "[REDACTED]")
@@ -360,9 +358,7 @@ class TestDefaultRedactionPolicy(unittest.TestCase):
         self.assertEqual(redacted["headers"]["authorization"], "[REDACTED]")
         self.assertEqual(redacted["headers"]["cookie"], "[REDACTED]")
         self.assertEqual(redacted["headers"]["set-cookie"], "[REDACTED]")
-        self.assertEqual(
-            redacted["headers"]["content-type"], "application/json"
-        )
+        self.assertEqual(redacted["headers"]["content-type"], "application/json")
 
     def test_default_policy_redacts_credentials(self):
         """Default policy should redact various credential fields."""
@@ -428,7 +424,9 @@ class TestDefaultRedactionPolicy(unittest.TestCase):
 
         # Check secrets are redacted
         self.assertEqual(redacted["tool_calls"][0]["args"]["api_key"], "[REDACTED]")
-        self.assertEqual(redacted["tool_calls"][0]["args"]["url"], "https://api.example.com")
+        self.assertEqual(
+            redacted["tool_calls"][0]["args"]["url"], "https://api.example.com"
+        )
         self.assertEqual(redacted["tool_calls"][0]["result"]["data"], "response")
         self.assertEqual(
             redacted["tool_calls"][0]["result"]["auth_token"], "[REDACTED]"
@@ -467,9 +465,7 @@ class TestRecorderIntegration(unittest.TestCase):
             # Verify sensitive data is redacted in storage
             self.assertEqual(len(events), 1)
             self.assertEqual(events[0]["payload"]["tool"], "api_request")
-            self.assertEqual(
-                events[0]["payload"]["args"]["api_key"], "[REDACTED]"
-            )
+            self.assertEqual(events[0]["payload"]["args"]["api_key"], "[REDACTED]")
             self.assertEqual(
                 events[0]["payload"]["args"]["url"], "https://api.example.com"
             )

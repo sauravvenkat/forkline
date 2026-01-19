@@ -64,7 +64,7 @@ def demo_default_redaction():
         # Verify original is unchanged (immutability)
         print("Original payload still intact (immutability check):")
         print(f"  api_key = {sensitive_payload['args']['api_key']}")
-        auth_header = sensitive_payload['args']['headers']['Authorization']
+        auth_header = sensitive_payload["args"]["headers"]["Authorization"]
         print(f"  Authorization = {auth_header}")
         print()
 
@@ -120,7 +120,7 @@ def demo_custom_policy():
         print("Determinism check (same email, different context):")
         print(f"  First hash:  {events[0]['payload']['email']}")
         print(f"  Second hash: {events[1]['payload']['email']}")
-        match = events[0]['payload']['email'] == events[1]['payload']['email']
+        match = events[0]["payload"]["email"] == events[1]["payload"]["email"]
         print(f"  Match: {match}")
         print()
 
