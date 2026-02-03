@@ -203,7 +203,7 @@ class SQLiteStore:
 
         steps = self._load_steps(run_id)
 
-        # Backward compatibility: use defaults for older artifacts missing version fields
+        # Backward compat: use defaults for older artifacts missing version fields
         forkline_version = row["forkline_version"]
         schema_version = row["schema_version"]
 

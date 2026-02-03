@@ -182,7 +182,10 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
         )
         # Insert run with NULL versions
         conn.execute(
-            "INSERT INTO runs (run_id, created_at, forkline_version, schema_version) VALUES (?, ?, ?, ?)",
+            """
+            INSERT INTO runs (run_id, created_at, forkline_version, schema_version)
+            VALUES (?, ?, ?, ?)
+            """,
             ("null-run", "2024-01-01T00:00:00Z", None, None),
         )
         conn.commit()
@@ -221,7 +224,7 @@ class TestRunRecorderVersioning(unittest.TestCase):
 
     def test_backward_compat_missing_forkline_version(self):
         """Runs without forkline_version should get default."""
-        # Create a legacy database with old schema (only schema_version, no forkline_version)
+        # Create a legacy database with old schema (no forkline_version column)
         legacy_db_path = os.path.join(self.tmpdir, "legacy_recorder.db")
         conn = sqlite3.connect(legacy_db_path)
         conn.execute(

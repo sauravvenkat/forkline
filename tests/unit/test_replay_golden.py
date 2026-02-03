@@ -23,7 +23,6 @@ from forkline.core.replay import (
     MissingArtifactError,
     ReplayEngine,
     ReplayPolicy,
-    ReplayResult,
     ReplayStatus,
 )
 
@@ -239,7 +238,7 @@ def create_golden_run(run_id: str = "golden-run-001") -> Run:
                 "completion_tokens": 89,
                 "response": {
                     "role": "assistant",
-                    "content": "Based on the search results, I found two excellent resources...",
+                    "content": "Based on search, I found two excellent resources...",
                 },
             },
         ),
@@ -271,9 +270,11 @@ def create_golden_run(run_id: str = "golden-run-001") -> Run:
             4,
             "output",
             {
-                "final_response": "Here are the best resources for Python async programming:\n"
-                "1. Official Python asyncio documentation\n"
-                "2. Real Python's comprehensive asyncio tutorial",
+                "final_response": (
+                    "Here are the best resources:\n"
+                    "1. Official asyncio docs\n"
+                    "2. Real Python tutorial"
+                ),
                 "status": "success",
             },
         ),
@@ -587,7 +588,7 @@ class TestReplayGolden(unittest.TestCase):
                 self.assertEqual(
                     json1,
                     json2,
-                    f"Payloads should be identical when serialized with sorted keys",
+                    "Payloads should be identical when serialized with sorted keys",
                 )
 
     def test_replay_diverged_at_llm_step(self):

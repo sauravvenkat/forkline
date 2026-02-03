@@ -27,16 +27,15 @@ from .replay import (
     ReplayEngine,
     # Replay mode guardrails
     assert_not_in_replay_mode,
-    get_replay_run_id,
-    guard_live_call,
-    is_replay_mode_active,
-    replay_mode,
-    # Utilities
     compare_events,
     compare_steps,
     deep_compare,
+    get_replay_run_id,
+    guard_live_call,
+    is_replay_mode_active,
     # Legacy
     replay,
+    replay_mode,
 )
 from .types import Event, Run, Step
 

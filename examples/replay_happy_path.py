@@ -17,7 +17,7 @@ import tempfile
 # Add parent directory to path for local development
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from forkline import SQLiteStore, ReplayEngine, ReplayStatus
+from forkline import ReplayEngine, SQLiteStore
 
 
 # =============================================================================

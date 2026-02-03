@@ -21,7 +21,6 @@ Design Philosophy:
 from __future__ import annotations
 
 import contextvars
-import json
 import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -35,7 +34,6 @@ from typing import (
     List,
     Optional,
     Tuple,
-    Union,
 )
 
 from ..storage.store import SQLiteStore
@@ -270,11 +268,11 @@ class ReplayPolicy:
     Controls how the replay engine handles various scenarios.
 
     Attributes:
-        ignore_timestamps: If True, ignore timestamp fields in comparisons (default: True)
-        strict_event_order: If True, events must match in exact order (default: True)
-        fail_on_missing_artifact: If True, raise MissingArtifactError; if False, skip (default: True)
-        compare_tool_outputs: If True, compare tool call outputs (default: True)
-        compare_llm_outputs: If True, compare LLM call outputs (default: True)
+        ignore_timestamps: If True, ignore timestamp fields in comparisons.
+        strict_event_order: If True, events must match in exact order.
+        fail_on_missing_artifact: If True, raise MissingArtifactError.
+        compare_tool_outputs: If True, compare tool call outputs.
+        compare_llm_outputs: If True, compare LLM call outputs.
     """
 
     ignore_timestamps: bool = True
@@ -350,7 +348,9 @@ class FieldDiff:
     actual: Any
 
     def __str__(self) -> str:
-        return f"{self.path}: expected {_truncate(self.expected)}, got {_truncate(self.actual)}"
+        exp = _truncate(self.expected)
+        act = _truncate(self.actual)
+        return f"{self.path}: expected {exp}, got {act}"
 
 
 @dataclass(frozen=True)
@@ -418,8 +418,8 @@ class DivergencePoint:
     Attributes:
         step_idx: Index of the divergent step (0-based)
         step_name: Name of the divergent step for human readability
-        event_idx: Index of the divergent event within the step (None if step-level)
-        divergence_type: Category of divergence (step_count, step_name, event_count, etc.)
+        event_idx: Index of the divergent event (None if step-level)
+        divergence_type: Category of divergence (step_count, event_count, etc.)
         field_diffs: List of specific field differences
         context: Additional context for debugging
 
@@ -533,11 +533,13 @@ class ReplayResult:
     def summary(self) -> str:
         """Human-readable summary of the replay result."""
         if self.status == ReplayStatus.MATCH:
-            return f"MATCH: {self.steps_compared} steps, {self.total_events_compared} events compared"
+            steps = self.steps_compared
+            events = self.total_events_compared
+            return f"MATCH: {steps} steps, {events} events compared"
         elif self.status == ReplayStatus.DIVERGED:
             return f"DIVERGED: {self.divergence.summary()}"
         elif self.status == ReplayStatus.INCOMPLETE:
-            return f"INCOMPLETE: replay has fewer steps than original"
+            return "INCOMPLETE: replay has fewer steps than original"
         elif self.status == ReplayStatus.ERROR:
             return f"ERROR: {self.error_message or 'unknown error'}"
         else:
@@ -597,7 +599,7 @@ def deep_compare(
     diffs: List[FieldDiff] = []
 
     # Type mismatch is an immediate difference
-    if type(expected) != type(actual):
+    if type(expected) is not type(actual):
         diffs.append(
             FieldDiff(
                 path=path or "(root)",
@@ -1105,8 +1107,9 @@ class ReplayEngine:
                         "result" not in event.payload
                         and policy.fail_on_missing_artifact
                     ):
+                        name = event.payload.get("name", "unknown")
                         raise MissingArtifactError(
-                            f"Tool call missing result: {event.payload.get('name', 'unknown')}",
+                            f"Tool call missing result: {name}",
                             run_id=run.run_id,
                             step_idx=step_idx,
                             event_idx=event_idx,
@@ -1121,7 +1124,7 @@ class ReplayEngine:
                     # LLM events should have some response content
                     if not event.payload and policy.fail_on_missing_artifact:
                         raise MissingArtifactError(
-                            f"LLM call missing output",
+                            "LLM call missing output",
                             run_id=run.run_id,
                             step_idx=step_idx,
                             event_idx=event_idx,
@@ -1389,8 +1392,8 @@ class ReplayContext:
 
         if expected_type is not None and event.type != expected_type:
             raise ReplayOrderError(
-                f"Expected event type '{expected_type}' at step[{step_idx}]/event[{cursor}], "
-                f"got '{event.type}'"
+                f"Expected event type '{expected_type}' at "
+                f"step[{step_idx}]/event[{cursor}], got '{event.type}'"
             )
 
         self._event_cursors[step_idx] = cursor + 1

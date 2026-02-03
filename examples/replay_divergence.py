@@ -18,7 +18,7 @@ import tempfile
 # Add parent directory to path for local development
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from forkline import SQLiteStore, ReplayEngine, ReplayStatus
+from forkline import ReplayEngine, SQLiteStore
 
 
 # =============================================================================
@@ -136,7 +136,7 @@ def main():
 
         if result.is_diverged():
             div = result.divergence
-            print(f"\nDivergence detected!")
+            print("\nDivergence detected!")
             print(f"  Step index: {div.step_idx}")
             print(f"  Step name:  {div.step_name}")
             print(f"  Reason:     {div.divergence_type}")
@@ -144,7 +144,7 @@ def main():
             if div.event_idx is not None:
                 print(f"  Event index: {div.event_idx}")
 
-            print(f"\nField differences:")
+            print("\nField differences:")
             for diff in div.field_diffs[:5]:  # Show first 5
                 print(f"  - {diff.path}")
                 print(f"      expected: {diff.expected}")

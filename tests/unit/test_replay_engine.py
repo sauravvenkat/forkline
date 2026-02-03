@@ -22,10 +22,11 @@ from typing import List
 from forkline import (
     Event,
     Run,
-    Step,
     SQLiteStore,
+    Step,
 )
 from forkline.core.replay import (
+    DeterminismViolationError,
     DivergencePoint,
     FieldDiff,
     ReplayContext,
@@ -33,17 +34,14 @@ from forkline.core.replay import (
     ReplayOrderError,
     ReplayResult,
     ReplayStatus,
-    ReplayStepResult,
+    assert_not_in_replay_mode,
     compare_events,
     compare_steps,
     deep_compare,
-    # Replay mode guardrails
-    assert_not_in_replay_mode,
     get_replay_run_id,
     guard_live_call,
     is_replay_mode_active,
     replay_mode,
-    DeterminismViolationError,
 )
 
 
@@ -481,11 +479,11 @@ class TestReplayEngine(unittest.TestCase):
         run2 = make_simple_run("run-2")
         self._record_run(run2)
 
-        result = self.engine.compare_runs("run-1", "run-2")
+        _result = self.engine.compare_runs("run-1", "run-2")
 
         # Note: The first step has different structure, so we get DIVERGED first
         # Let's create a proper incomplete scenario
-        pass  # This test case needs proper setup
+        _ = _result  # Silence unused variable warning - test needs proper setup
 
     def test_first_divergence_wins(self):
         """Engine should halt at first divergence."""

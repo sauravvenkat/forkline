@@ -11,12 +11,6 @@ from .core import (
     create_default_policy,
 )
 from .core.redaction import RedactionPolicy
-from .version import (
-    DEFAULT_FORKLINE_VERSION,
-    DEFAULT_SCHEMA_VERSION,
-    FORKLINE_VERSION,
-    SCHEMA_VERSION,
-)
 from .core.replay import (
     # Exceptions
     DeterminismViolationError,
@@ -50,6 +44,12 @@ from .core.replay import (
 )
 from .storage import RunRecorder, SQLiteStore
 from .tracer import Tracer
+from .version import (
+    DEFAULT_FORKLINE_VERSION,
+    DEFAULT_SCHEMA_VERSION,
+    FORKLINE_VERSION,
+    SCHEMA_VERSION,
+)
 
 __all__ = [
     # Version
