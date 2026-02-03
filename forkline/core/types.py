@@ -29,7 +29,7 @@ class Step:
 class Run:
     """
     Represents a recorded run.
-    
+
     Attributes:
         run_id: Unique identifier for the run
         created_at: ISO8601 timestamp of run creation
@@ -37,6 +37,7 @@ class Run:
         forkline_version: Version of Forkline that created this run
         schema_version: Schema version of the recording format
     """
+
     run_id: str
     created_at: str
     steps: List[Step] = field(default_factory=list)

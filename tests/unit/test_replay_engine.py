@@ -92,7 +92,9 @@ def make_step(
     )
 
 
-def make_run(run_id: str, steps: List[Step], created_at: str = "2024-01-01T00:00:00Z") -> Run:
+def make_run(
+    run_id: str, steps: List[Step], created_at: str = "2024-01-01T00:00:00Z"
+) -> Run:
     """Create a test Run."""
     return Run(run_id=run_id, created_at=created_at, steps=steps)
 
@@ -116,7 +118,9 @@ def make_multi_step_run(run_id: str = "test-run") -> Run:
     ]
     step2_events = [
         make_event(4, run_id, 1, "input", {"data": "Step 2 input"}),
-        make_event(5, run_id, 1, "tool_call", {"name": "search", "args": {"q": "test"}}),
+        make_event(
+            5, run_id, 1, "tool_call", {"name": "search", "args": {"q": "test"}}
+        ),
         make_event(6, run_id, 1, "output", {"result": "Step 2 output"}),
     ]
     step3_events = [
@@ -266,29 +270,45 @@ class TestCompareEvents(unittest.TestCase):
 
     def test_timestamps_ignored_by_default(self):
         """Timestamps should be ignored by default."""
-        e1 = make_event(1, "run1", 0, "input", {"prompt": "hello"}, "2024-01-01T00:00:00Z")
-        e2 = make_event(2, "run2", 0, "input", {"prompt": "hello"}, "2024-12-31T23:59:59Z")
+        e1 = make_event(
+            1, "run1", 0, "input", {"prompt": "hello"}, "2024-01-01T00:00:00Z"
+        )
+        e2 = make_event(
+            2, "run2", 0, "input", {"prompt": "hello"}, "2024-12-31T23:59:59Z"
+        )
         diffs = compare_events(e1, e2)
         self.assertEqual(len(diffs), 0)
 
     def test_complex_payload_comparison(self):
         """Complex nested payloads should be compared correctly."""
-        e1 = make_event(1, "run1", 0, "llm_call", {
-            "model": "gpt-4",
-            "messages": [
-                {"role": "system", "content": "You are helpful"},
-                {"role": "user", "content": "Hello"},
-            ],
-            "response": {"text": "Hi there", "tokens": 5},
-        })
-        e2 = make_event(2, "run2", 0, "llm_call", {
-            "model": "gpt-4",
-            "messages": [
-                {"role": "system", "content": "You are helpful"},
-                {"role": "user", "content": "Hello"},
-            ],
-            "response": {"text": "Hi there", "tokens": 6},  # Different token count
-        })
+        e1 = make_event(
+            1,
+            "run1",
+            0,
+            "llm_call",
+            {
+                "model": "gpt-4",
+                "messages": [
+                    {"role": "system", "content": "You are helpful"},
+                    {"role": "user", "content": "Hello"},
+                ],
+                "response": {"text": "Hi there", "tokens": 5},
+            },
+        )
+        e2 = make_event(
+            2,
+            "run2",
+            0,
+            "llm_call",
+            {
+                "model": "gpt-4",
+                "messages": [
+                    {"role": "system", "content": "You are helpful"},
+                    {"role": "user", "content": "Hello"},
+                ],
+                "response": {"text": "Hi there", "tokens": 6},  # Different token count
+            },
+        )
         diffs = compare_events(e1, e2)
         self.assertEqual(len(diffs), 1)
         self.assertEqual(diffs[0].path, "payload.response.tokens")
@@ -376,6 +396,7 @@ class TestReplayEngine(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def _record_run(self, run: Run) -> None:
@@ -396,9 +417,9 @@ class TestReplayEngine(unittest.TestCase):
         """Comparing a run to itself should return MATCH."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         result = self.engine.compare_runs("run-1", "run-1")
-        
+
         self.assertEqual(result.status, ReplayStatus.MATCH)
         self.assertIsNone(result.divergence)
         self.assertEqual(result.steps_compared, 1)
@@ -410,9 +431,9 @@ class TestReplayEngine(unittest.TestCase):
         run2 = make_simple_run("run-2")
         self._record_run(run1)
         self._record_run(run2)
-        
+
         result = self.engine.compare_runs("run-1", "run-2")
-        
+
         self.assertEqual(result.status, ReplayStatus.MATCH)
         self.assertTrue(result.is_match())
 
@@ -420,18 +441,18 @@ class TestReplayEngine(unittest.TestCase):
         """Missing original run should return ORIGINAL_NOT_FOUND."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         result = self.engine.compare_runs("nonexistent", "run-1")
-        
+
         self.assertEqual(result.status, ReplayStatus.ORIGINAL_NOT_FOUND)
 
     def test_replay_not_found(self):
         """Missing replay run should return REPLAY_NOT_FOUND."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         result = self.engine.compare_runs("run-1", "nonexistent")
-        
+
         self.assertEqual(result.status, ReplayStatus.REPLAY_NOT_FOUND)
 
     def test_step_count_divergence(self):
@@ -439,13 +460,13 @@ class TestReplayEngine(unittest.TestCase):
         # Original has 1 step
         run1 = make_simple_run("run-1")
         self._record_run(run1)
-        
+
         # Replay has 3 steps
         run2 = make_multi_step_run("run-2")
         self._record_run(run2)
-        
+
         result = self.engine.compare_runs("run-1", "run-2")
-        
+
         self.assertEqual(result.status, ReplayStatus.DIVERGED)
         self.assertIsNotNone(result.divergence)
         self.assertEqual(result.divergence.divergence_type, "extra_steps_in_replay")
@@ -455,13 +476,13 @@ class TestReplayEngine(unittest.TestCase):
         # Original has 3 steps
         run1 = make_multi_step_run("run-1")
         self._record_run(run1)
-        
+
         # Replay has 1 step
         run2 = make_simple_run("run-2")
         self._record_run(run2)
-        
+
         result = self.engine.compare_runs("run-1", "run-2")
-        
+
         # Note: The first step has different structure, so we get DIVERGED first
         # Let's create a proper incomplete scenario
         pass  # This test case needs proper setup
@@ -471,24 +492,32 @@ class TestReplayEngine(unittest.TestCase):
         # Create two runs with multiple differences
         step1_events = [make_event(1, "run-1", 0, "input", {"x": 1})]
         step2_events = [make_event(2, "run-1", 1, "input", {"y": 2})]
-        run1 = make_run("run-1", [
-            make_step(1, "run-1", 0, "first", step1_events),
-            make_step(2, "run-1", 1, "second", step2_events),
-        ])
-        
+        run1 = make_run(
+            "run-1",
+            [
+                make_step(1, "run-1", 0, "first", step1_events),
+                make_step(2, "run-1", 1, "second", step2_events),
+            ],
+        )
+
         # Both steps have different content
         step1_events_v2 = [make_event(3, "run-2", 0, "input", {"x": 999})]  # Different!
-        step2_events_v2 = [make_event(4, "run-2", 1, "input", {"y": 999})]  # Also different!
-        run2 = make_run("run-2", [
-            make_step(3, "run-2", 0, "first", step1_events_v2),
-            make_step(4, "run-2", 1, "second", step2_events_v2),
-        ])
-        
+        step2_events_v2 = [
+            make_event(4, "run-2", 1, "input", {"y": 999})
+        ]  # Also different!
+        run2 = make_run(
+            "run-2",
+            [
+                make_step(3, "run-2", 0, "first", step1_events_v2),
+                make_step(4, "run-2", 1, "second", step2_events_v2),
+            ],
+        )
+
         self._record_run(run1)
         self._record_run(run2)
-        
+
         result = self.engine.compare_runs("run-1", "run-2")
-        
+
         self.assertEqual(result.status, ReplayStatus.DIVERGED)
         # Should halt at FIRST step, not continue to second
         self.assertEqual(result.divergence.step_idx, 0)
@@ -496,27 +525,45 @@ class TestReplayEngine(unittest.TestCase):
 
     def test_payload_divergence_caught(self):
         """Payload differences should be caught with exact field."""
-        events1 = [make_event(1, "run-1", 0, "llm_call", {
-            "model": "gpt-4",
-            "prompt": "Hello",
-            "response": "Hi there",
-        })]
-        events2 = [make_event(2, "run-2", 0, "llm_call", {
-            "model": "gpt-4",
-            "prompt": "Hello",
-            "response": "Goodbye",  # Different response!
-        })]
+        events1 = [
+            make_event(
+                1,
+                "run-1",
+                0,
+                "llm_call",
+                {
+                    "model": "gpt-4",
+                    "prompt": "Hello",
+                    "response": "Hi there",
+                },
+            )
+        ]
+        events2 = [
+            make_event(
+                2,
+                "run-2",
+                0,
+                "llm_call",
+                {
+                    "model": "gpt-4",
+                    "prompt": "Hello",
+                    "response": "Goodbye",  # Different response!
+                },
+            )
+        ]
         run1 = make_run("run-1", [make_step(1, "run-1", 0, "chat", events1)])
         run2 = make_run("run-2", [make_step(2, "run-2", 0, "chat", events2)])
-        
+
         self._record_run(run1)
         self._record_run(run2)
-        
+
         result = self.engine.compare_runs("run-1", "run-2")
-        
+
         self.assertEqual(result.status, ReplayStatus.DIVERGED)
         # Check that we get the specific field
-        response_diff = [d for d in result.divergence.field_diffs if "response" in d.path]
+        response_diff = [
+            d for d in result.divergence.field_diffs if "response" in d.path
+        ]
         self.assertEqual(len(response_diff), 1)
         self.assertEqual(response_diff[0].expected, "Hi there")
         self.assertEqual(response_diff[0].actual, "Goodbye")
@@ -525,18 +572,18 @@ class TestReplayEngine(unittest.TestCase):
         """validate_run should compare run to itself."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         result = self.engine.validate_run("run-1")
-        
+
         self.assertEqual(result.status, ReplayStatus.MATCH)
 
     def test_compare_loaded_runs(self):
         """compare_loaded_runs should work with in-memory runs."""
         run1 = make_simple_run("run-1")
         run2 = make_simple_run("run-2")
-        
+
         result = self.engine.compare_loaded_runs(run1, run2)
-        
+
         self.assertEqual(result.status, ReplayStatus.MATCH)
 
     def test_step_results_populated(self):
@@ -545,9 +592,9 @@ class TestReplayEngine(unittest.TestCase):
         run2 = make_multi_step_run("run-2")
         self._record_run(run1)
         self._record_run(run2)
-        
+
         result = self.engine.compare_runs("run-1", "run-2")
-        
+
         self.assertEqual(result.status, ReplayStatus.MATCH)
         self.assertEqual(len(result.step_results), 3)
         for step_result in result.step_results:
@@ -560,10 +607,10 @@ class TestReplayEngine(unittest.TestCase):
         run2 = make_multi_step_run("run-2")
         self._record_run(run1)
         self._record_run(run2)
-        
+
         result1 = self.engine.compare_runs("run-1", "run-2")
         result2 = self.engine.compare_runs("run-1", "run-2")
-        
+
         self.assertEqual(result1.status, result2.status)
         self.assertEqual(result1.steps_compared, result2.steps_compared)
         self.assertEqual(result1.total_events_compared, result2.total_events_compared)
@@ -581,7 +628,7 @@ class TestReplayContext(unittest.TestCase):
         """ReplayContext should be creatable from a Run."""
         run = make_multi_step_run("run-1")
         ctx = ReplayContext.from_run(run)
-        
+
         self.assertIsNotNone(ctx)
         self.assertEqual(ctx.run.run_id, "run-1")
 
@@ -589,9 +636,9 @@ class TestReplayContext(unittest.TestCase):
         """Should retrieve step by index."""
         run = make_multi_step_run("run-1")
         ctx = ReplayContext(run)
-        
+
         step = ctx.get_step(1)
-        
+
         self.assertIsNotNone(step)
         self.assertEqual(step.name, "process")
 
@@ -599,7 +646,7 @@ class TestReplayContext(unittest.TestCase):
         """Out of bounds step index should return None."""
         run = make_simple_run("run-1")
         ctx = ReplayContext(run)
-        
+
         self.assertIsNone(ctx.get_step(-1))
         self.assertIsNone(ctx.get_step(100))
 
@@ -607,9 +654,9 @@ class TestReplayContext(unittest.TestCase):
         """Should retrieve step by name."""
         run = make_multi_step_run("run-1")
         ctx = ReplayContext(run)
-        
+
         step = ctx.get_step_by_name("finalize")
-        
+
         self.assertIsNotNone(step)
         self.assertEqual(step.idx, 2)
 
@@ -617,9 +664,9 @@ class TestReplayContext(unittest.TestCase):
         """Should retrieve specific event."""
         run = make_multi_step_run("run-1")
         ctx = ReplayContext(run)
-        
+
         event = ctx.get_event(0, 1)  # Second event of first step
-        
+
         self.assertIsNotNone(event)
         self.assertEqual(event.type, "llm_call")
 
@@ -627,9 +674,9 @@ class TestReplayContext(unittest.TestCase):
         """Should filter events by type."""
         run = make_multi_step_run("run-1")
         ctx = ReplayContext(run)
-        
+
         tool_calls = ctx.get_events_by_type(1, "tool_call")
-        
+
         self.assertEqual(len(tool_calls), 1)
         self.assertEqual(tool_calls[0].payload["name"], "search")
 
@@ -637,9 +684,9 @@ class TestReplayContext(unittest.TestCase):
         """Should iterate over events in order."""
         run = make_simple_run("run-1")
         ctx = ReplayContext(run)
-        
+
         events = list(ctx.iter_events(0))
-        
+
         self.assertEqual(len(events), 2)
         self.assertEqual(events[0].type, "input")
         self.assertEqual(events[1].type, "output")
@@ -648,11 +695,11 @@ class TestReplayContext(unittest.TestCase):
         """next_event should advance internal cursor."""
         run = make_simple_run("run-1")
         ctx = ReplayContext(run)
-        
+
         event1 = ctx.next_event(0)
         event2 = ctx.next_event(0)
         event3 = ctx.next_event(0)
-        
+
         self.assertEqual(event1.type, "input")
         self.assertEqual(event2.type, "output")
         self.assertIsNone(event3)  # Exhausted
@@ -661,7 +708,7 @@ class TestReplayContext(unittest.TestCase):
         """next_event should validate expected type."""
         run = make_simple_run("run-1")
         ctx = ReplayContext(run)
-        
+
         # First event is "input"
         with self.assertRaises(ReplayOrderError):
             ctx.next_event(0, expected_type="output")
@@ -670,10 +717,10 @@ class TestReplayContext(unittest.TestCase):
         """peek_event should not advance cursor."""
         run = make_simple_run("run-1")
         ctx = ReplayContext(run)
-        
+
         event1 = ctx.peek_event(0)
         event2 = ctx.peek_event(0)
-        
+
         self.assertEqual(event1.type, event2.type)
         self.assertEqual(event1.type, "input")
 
@@ -681,11 +728,11 @@ class TestReplayContext(unittest.TestCase):
         """reset_cursor should reset to beginning."""
         run = make_simple_run("run-1")
         ctx = ReplayContext(run)
-        
+
         ctx.next_event(0)
         ctx.next_event(0)
         ctx.reset_cursor(0)
-        
+
         event = ctx.peek_event(0)
         self.assertEqual(event.type, "input")
 
@@ -693,11 +740,11 @@ class TestReplayContext(unittest.TestCase):
         """reset_cursor with None should reset all."""
         run = make_multi_step_run("run-1")
         ctx = ReplayContext(run)
-        
+
         ctx.next_event(0)
         ctx.next_event(1)
         ctx.reset_cursor()  # Reset all
-        
+
         event0 = ctx.peek_event(0)
         event1 = ctx.peek_event(1)
         self.assertEqual(event0.type, "input")
@@ -817,8 +864,7 @@ class TestDivergencePoint(unittest.TestCase):
             event_idx=0,
             divergence_type="event_payload_mismatch",
             field_diffs=[
-                FieldDiff(f"field{i}", f"exp{i}", f"act{i}")
-                for i in range(10)
+                FieldDiff(f"field{i}", f"exp{i}", f"act{i}") for i in range(10)
             ],
         )
         summary = divergence.summary()
@@ -836,9 +882,9 @@ class TestReplayPolicy(unittest.TestCase):
     def test_default_policy(self):
         """Default policy should have sensible defaults."""
         from forkline.core.replay import ReplayPolicy
-        
+
         policy = ReplayPolicy.default()
-        
+
         self.assertTrue(policy.ignore_timestamps)
         self.assertTrue(policy.strict_event_order)
         self.assertTrue(policy.fail_on_missing_artifact)
@@ -848,9 +894,9 @@ class TestReplayPolicy(unittest.TestCase):
     def test_strict_policy(self):
         """Strict policy should enable all comparisons."""
         from forkline.core.replay import ReplayPolicy
-        
+
         policy = ReplayPolicy.strict()
-        
+
         self.assertFalse(policy.ignore_timestamps)  # Strict checks timestamps
         self.assertTrue(policy.strict_event_order)
         self.assertTrue(policy.fail_on_missing_artifact)
@@ -858,9 +904,9 @@ class TestReplayPolicy(unittest.TestCase):
     def test_lenient_policy(self):
         """Lenient policy should skip missing artifacts."""
         from forkline.core.replay import ReplayPolicy
-        
+
         policy = ReplayPolicy.lenient()
-        
+
         self.assertTrue(policy.ignore_timestamps)
         self.assertFalse(policy.fail_on_missing_artifact)
 
@@ -876,7 +922,7 @@ class TestDivergence(unittest.TestCase):
     def test_divergence_creation(self):
         """Divergence should be creatable with all fields."""
         from forkline.core.replay import Divergence, DivergenceReason
-        
+
         divergence = Divergence(
             step_index=1,
             step_name="process",
@@ -886,7 +932,7 @@ class TestDivergence(unittest.TestCase):
             diff=[FieldDiff("result", "foo", "bar")],
             event_index=2,
         )
-        
+
         self.assertEqual(divergence.step_index, 1)
         self.assertEqual(divergence.step_name, "process")
         self.assertEqual(divergence.reason, DivergenceReason.EVENT_PAYLOAD_MISMATCH)
@@ -895,7 +941,7 @@ class TestDivergence(unittest.TestCase):
     def test_divergence_to_dict(self):
         """Divergence should serialize to dict."""
         from forkline.core.replay import Divergence, DivergenceReason
-        
+
         divergence = Divergence(
             step_index=0,
             step_name="init",
@@ -903,9 +949,9 @@ class TestDivergence(unittest.TestCase):
             expected="expected_value",
             actual="actual_value",
         )
-        
+
         result = divergence.to_dict()
-        
+
         self.assertEqual(result["step_index"], 0)
         self.assertEqual(result["reason"], "tool_output_mismatch")
         self.assertEqual(result["expected"], "expected_value")
@@ -914,7 +960,7 @@ class TestDivergence(unittest.TestCase):
     def test_divergence_point_to_divergence(self):
         """DivergencePoint should convert to new Divergence format."""
         from forkline.core.replay import DivergenceReason
-        
+
         dp = DivergencePoint(
             step_idx=1,
             step_name="process",
@@ -922,9 +968,9 @@ class TestDivergence(unittest.TestCase):
             divergence_type="event_payload_mismatch",
             field_diffs=[FieldDiff("payload.result", "foo", "bar")],
         )
-        
+
         divergence = dp.to_divergence()
-        
+
         self.assertEqual(divergence.step_index, 1)
         self.assertEqual(divergence.step_name, "process")
         self.assertEqual(divergence.reason, DivergenceReason.EVENT_PAYLOAD_MISMATCH)
@@ -942,7 +988,7 @@ class TestReplayExceptions(unittest.TestCase):
     def test_missing_artifact_error(self):
         """MissingArtifactError should capture context."""
         from forkline.core.replay import MissingArtifactError
-        
+
         error = MissingArtifactError(
             "Run not found",
             run_id="abc123",
@@ -950,12 +996,12 @@ class TestReplayExceptions(unittest.TestCase):
             event_idx=2,
             artifact_type="tool_result",
         )
-        
+
         self.assertEqual(error.run_id, "abc123")
         self.assertEqual(error.step_idx, 1)
         self.assertEqual(error.event_idx, 2)
         self.assertEqual(error.artifact_type, "tool_result")
-        
+
         error_str = str(error)
         self.assertIn("abc123", error_str)
         self.assertIn("step=1", error_str)
@@ -964,7 +1010,7 @@ class TestReplayExceptions(unittest.TestCase):
     def test_determinism_violation_error(self):
         """DeterminismViolationError should capture expected/actual."""
         from forkline.core.replay import DeterminismViolationError
-        
+
         error = DeterminismViolationError(
             "Output mismatch",
             step_idx=3,
@@ -972,11 +1018,11 @@ class TestReplayExceptions(unittest.TestCase):
             actual={"result": "bar"},
             violation_type="llm_output_mismatch",
         )
-        
+
         self.assertEqual(error.step_idx, 3)
         self.assertEqual(error.expected, {"result": "foo"})
         self.assertEqual(error.actual, {"result": "bar"})
-        
+
         error_str = str(error)
         self.assertIn("step 3", error_str)
         self.assertIn("llm_output_mismatch", error_str)
@@ -1000,6 +1046,7 @@ class TestReplayMethod(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def _record_run(self, run: Run) -> None:
@@ -1019,10 +1066,10 @@ class TestReplayMethod(unittest.TestCase):
     def test_replay_missing_run_raises_error(self):
         """replay() should raise MissingArtifactError for missing run."""
         from forkline.core.replay import MissingArtifactError
-        
+
         with self.assertRaises(MissingArtifactError) as ctx:
             self.engine.replay("nonexistent-run")
-        
+
         self.assertEqual(ctx.exception.run_id, "nonexistent-run")
         self.assertEqual(ctx.exception.artifact_type, "run")
 
@@ -1030,42 +1077,42 @@ class TestReplayMethod(unittest.TestCase):
         """replay() without executor should validate the run."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         result = self.engine.replay("run-1")
-        
+
         self.assertEqual(result.status, ReplayStatus.MATCH)
         self.assertEqual(result.steps_compared, 1)
 
     def test_replay_with_policy(self):
         """replay() should respect policy configuration."""
         from forkline.core.replay import ReplayPolicy
-        
+
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         policy = ReplayPolicy(ignore_timestamps=False)
         result = self.engine.replay("run-1", policy=policy)
-        
+
         self.assertEqual(result.status, ReplayStatus.MATCH)
 
     def test_replay_with_executor_match(self):
         """replay() with executor should return MATCH when outputs match."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         # Executor that returns the same step (identity)
         def identity_executor(step: Step, ctx: ReplayContext) -> Step:
             return step
-        
+
         result = self.engine.replay("run-1", executor=identity_executor)
-        
+
         self.assertEqual(result.status, ReplayStatus.MATCH)
 
     def test_replay_with_executor_diverged(self):
         """replay() with executor should return DIVERGED when outputs differ."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         # Executor that modifies the step name
         def modifying_executor(step: Step, ctx: ReplayContext) -> Step:
             return Step(
@@ -1077,9 +1124,9 @@ class TestReplayMethod(unittest.TestCase):
                 ended_at=step.ended_at,
                 events=step.events,
             )
-        
+
         result = self.engine.replay("run-1", executor=modifying_executor)
-        
+
         self.assertEqual(result.status, ReplayStatus.DIVERGED)
         self.assertIsNotNone(result.divergence)
         self.assertEqual(result.divergence.divergence_type, "step_name_mismatch")
@@ -1088,25 +1135,25 @@ class TestReplayMethod(unittest.TestCase):
         """replay() should return ERROR status when executor raises."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         def failing_executor(step: Step, ctx: ReplayContext) -> Step:
             raise RuntimeError("Executor failed")
-        
+
         result = self.engine.replay("run-1", executor=failing_executor)
-        
+
         self.assertEqual(result.status, ReplayStatus.ERROR)
         self.assertIn("Executor failed", result.error_message)
 
     def test_replay_empty_run_lenient_policy(self):
         """replay() with lenient policy should handle empty runs."""
         from forkline.core.replay import ReplayPolicy
-        
+
         # Create run with no steps
         self.store.start_run("empty-run")
-        
+
         policy = ReplayPolicy.lenient()
         result = self.engine.replay("empty-run", policy=policy)
-        
+
         self.assertEqual(result.status, ReplayStatus.MATCH)
         self.assertEqual(result.steps_compared, 0)
 
@@ -1114,10 +1161,10 @@ class TestReplayMethod(unittest.TestCase):
         """ReplayResult should serialize to dict."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         result = self.engine.replay("run-1")
         result_dict = result.to_dict()
-        
+
         self.assertEqual(result_dict["original_run_id"], "run-1")
         self.assertEqual(result_dict["status"], "match")
         self.assertEqual(result_dict["steps_compared"], 1)
@@ -1126,7 +1173,7 @@ class TestReplayMethod(unittest.TestCase):
         """ReplayResult.get_divergence() should return new Divergence format."""
         run = make_simple_run("run-1")
         self._record_run(run)
-        
+
         def modifying_executor(step: Step, ctx: ReplayContext) -> Step:
             return Step(
                 step_id=step.step_id,
@@ -1137,10 +1184,10 @@ class TestReplayMethod(unittest.TestCase):
                 ended_at=step.ended_at,
                 events=step.events,
             )
-        
+
         result = self.engine.replay("run-1", executor=modifying_executor)
         divergence = result.get_divergence()
-        
+
         self.assertIsNotNone(divergence)
         self.assertEqual(divergence.step_index, 0)
         self.assertEqual(divergence.step_name, "process")
@@ -1162,24 +1209,25 @@ class TestReplayModeGuardrails(unittest.TestCase):
     def test_replay_mode_active_inside_context(self):
         """Replay mode should be active inside context manager."""
         self.assertFalse(is_replay_mode_active())
-        
+
         with replay_mode("run-123"):
             self.assertTrue(is_replay_mode_active())
             self.assertEqual(get_replay_run_id(), "run-123")
-        
+
         self.assertFalse(is_replay_mode_active())
         self.assertIsNone(get_replay_run_id())
 
     def test_replay_mode_works_in_nested_functions(self):
         """Replay mode should be visible in nested function calls."""
+
         def inner_function():
             return is_replay_mode_active()
-        
+
         def outer_function():
             return inner_function()
-        
+
         self.assertFalse(outer_function())
-        
+
         with replay_mode():
             self.assertTrue(outer_function())
 
@@ -1194,7 +1242,7 @@ class TestReplayModeGuardrails(unittest.TestCase):
         with replay_mode("run-abc"):
             with self.assertRaises(DeterminismViolationError) as ctx:
                 assert_not_in_replay_mode("test operation")
-            
+
             self.assertIn("run-abc", str(ctx.exception))
             self.assertIn("test operation", str(ctx.exception))
             self.assertEqual(ctx.exception.violation_type, "live_call_during_replay")
@@ -1207,21 +1255,22 @@ class TestReplayModeGuardrails(unittest.TestCase):
 
     def test_replay_disallows_live_tool_call(self):
         """Live tool calls should be forbidden during replay."""
+
         def mock_tool_executor(args: dict) -> dict:
             """Simulated tool executor that guards against replay mode."""
             guard_live_call("tool execution")
             # In real code, this would call an external tool
             return {"result": "from live tool"}
-        
+
         # Outside replay mode - should work
         result = mock_tool_executor({"query": "test"})
         self.assertEqual(result["result"], "from live tool")
-        
+
         # Inside replay mode - should raise
         with replay_mode("run-tool-test"):
             with self.assertRaises(DeterminismViolationError) as ctx:
                 mock_tool_executor({"query": "test"})
-            
+
             error = ctx.exception
             self.assertEqual(error.violation_type, "live_call_during_replay")
             self.assertIn("tool execution", str(error))
@@ -1229,21 +1278,22 @@ class TestReplayModeGuardrails(unittest.TestCase):
 
     def test_replay_disallows_live_llm_call(self):
         """Live LLM calls should be forbidden during replay."""
+
         def mock_llm_executor(prompt: str, model: str = "gpt-4") -> str:
             """Simulated LLM executor that guards against replay mode."""
             guard_live_call("LLM call")
             # In real code, this would call OpenAI, Anthropic, etc.
             return f"Response from {model}"
-        
+
         # Outside replay mode - should work
         response = mock_llm_executor("Hello", model="claude-3")
         self.assertEqual(response, "Response from claude-3")
-        
+
         # Inside replay mode - should raise
         with replay_mode("run-llm-test"):
             with self.assertRaises(DeterminismViolationError) as ctx:
                 mock_llm_executor("Hello")
-            
+
             error = ctx.exception
             self.assertEqual(error.violation_type, "live_call_during_replay")
             self.assertIn("LLM call", str(error))
@@ -1254,10 +1304,10 @@ class TestReplayModeGuardrails(unittest.TestCase):
         with replay_mode("debug-run-456"):
             with self.assertRaises(DeterminismViolationError) as ctx:
                 guard_live_call("network request")
-            
+
             error = ctx.exception
             error_str = str(error)
-            
+
             # Should contain run ID
             self.assertIn("debug-run-456", error_str)
             # Should contain operation type
@@ -1268,14 +1318,14 @@ class TestReplayModeGuardrails(unittest.TestCase):
     def test_replay_mode_restores_state_on_exception(self):
         """Replay mode context should restore state even on exception."""
         self.assertFalse(is_replay_mode_active())
-        
+
         try:
             with replay_mode("run-error"):
                 self.assertTrue(is_replay_mode_active())
                 raise ValueError("Simulated error")
         except ValueError:
             pass
-        
+
         # State should be restored
         self.assertFalse(is_replay_mode_active())
         self.assertIsNone(get_replay_run_id())
@@ -1283,19 +1333,19 @@ class TestReplayModeGuardrails(unittest.TestCase):
     def test_replay_mode_nesting(self):
         """Nested replay mode contexts should work correctly."""
         self.assertFalse(is_replay_mode_active())
-        
+
         with replay_mode("outer-run"):
             self.assertTrue(is_replay_mode_active())
             self.assertEqual(get_replay_run_id(), "outer-run")
-            
+
             with replay_mode("inner-run"):
                 self.assertTrue(is_replay_mode_active())
                 self.assertEqual(get_replay_run_id(), "inner-run")
-            
+
             # Back to outer context
             self.assertTrue(is_replay_mode_active())
             self.assertEqual(get_replay_run_id(), "outer-run")
-        
+
         self.assertFalse(is_replay_mode_active())
 
     def test_replay_mode_without_run_id(self):
@@ -1303,10 +1353,10 @@ class TestReplayModeGuardrails(unittest.TestCase):
         with replay_mode():
             self.assertTrue(is_replay_mode_active())
             self.assertIsNone(get_replay_run_id())
-            
+
             with self.assertRaises(DeterminismViolationError) as ctx:
                 guard_live_call("test")
-            
+
             # Should still work, just show "unknown" in message
             self.assertIn("unknown", str(ctx.exception))
 

@@ -58,7 +58,8 @@ class RunRecorder:
         """Initialize runs.db with versioned schema."""
         with self._connect() as conn:
             # Runs table with versioned schema
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS runs (
                     run_id TEXT PRIMARY KEY,
                     schema_version TEXT NOT NULL,
@@ -71,13 +72,15 @@ class RunRecorder:
                     platform TEXT NOT NULL,
                     cwd TEXT NOT NULL
                 )
-                """)
-            
+                """
+            )
+
             # Migration: add forkline_version column if it doesn't exist
             self._migrate_add_forkline_version(conn)
-    
+
             # Events table - append-only
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS events (
                     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     run_id TEXT NOT NULL,
@@ -86,14 +89,17 @@ class RunRecorder:
                     payload TEXT NOT NULL,
                     FOREIGN KEY (run_id) REFERENCES runs(run_id)
                 )
-                """)
+                """
+            )
 
             # Index for fast event retrieval
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_events_run_id 
                 ON events(run_id, event_id)
-                """)
-    
+                """
+            )
+
     def _migrate_add_forkline_version(self, conn: sqlite3.Connection) -> None:
         """Migration: add forkline_version column to existing databases."""
         try:
@@ -237,13 +243,13 @@ class RunRecorder:
                 return None
 
             result = dict(row)
-            
+
             # Backward compatibility: use defaults for older artifacts
             if result.get("schema_version") is None:
                 result["schema_version"] = DEFAULT_SCHEMA_VERSION
             if result.get("forkline_version") is None:
                 result["forkline_version"] = DEFAULT_FORKLINE_VERSION
-            
+
             return result
 
     def get_events(self, run_id: str) -> list[Dict[str, Any]]:

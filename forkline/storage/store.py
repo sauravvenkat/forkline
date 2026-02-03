@@ -31,18 +31,21 @@ class SQLiteStore:
 
     def _init_db(self) -> None:
         with self._connect() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS runs (
                     run_id TEXT PRIMARY KEY,
                     created_at TEXT NOT NULL,
                     forkline_version TEXT,
                     schema_version TEXT
                 )
-                """)
-            
+                """
+            )
+
             # Migration: add version columns if they don't exist (for older DBs)
             self._migrate_add_version_columns(conn)
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS steps (
                     step_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     run_id TEXT NOT NULL,
@@ -51,9 +54,11 @@ class SQLiteStore:
                     started_at TEXT NOT NULL,
                     ended_at TEXT
                 )
-                """)
-    
-            conn.execute("""
+                """
+            )
+
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS events (
                     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     run_id TEXT NOT NULL,
@@ -62,12 +67,13 @@ class SQLiteStore:
                     payload_json TEXT NOT NULL,
                     created_at TEXT NOT NULL
                 )
-                """)
-    
+                """
+            )
+
     def _migrate_add_version_columns(self, conn: sqlite3.Connection) -> None:
         """
         Migration: add version columns to existing databases.
-        
+
         This enables backward compatibility with older artifacts that
         don't have version fields.
         """
@@ -194,18 +200,18 @@ class SQLiteStore:
             ).fetchone()
             if row is None:
                 return None
-        
+
         steps = self._load_steps(run_id)
-        
+
         # Backward compatibility: use defaults for older artifacts missing version fields
         forkline_version = row["forkline_version"]
         schema_version = row["schema_version"]
-        
+
         if forkline_version is None:
             forkline_version = DEFAULT_FORKLINE_VERSION
         if schema_version is None:
             schema_version = DEFAULT_SCHEMA_VERSION
-        
+
         return Run(
             run_id=row["run_id"],
             created_at=row["created_at"],

@@ -51,8 +51,7 @@ class TestVersionConstants(unittest.TestCase):
         """Default versions for backward compat should be sensible."""
         # Default forkline version should be older or "unknown"
         self.assertTrue(
-            DEFAULT_FORKLINE_VERSION == "0.1.0" or 
-            DEFAULT_FORKLINE_VERSION == "unknown"
+            DEFAULT_FORKLINE_VERSION == "0.1.0" or DEFAULT_FORKLINE_VERSION == "unknown"
         )
         # Default schema should match current (recording format hasn't changed)
         self.assertEqual(DEFAULT_SCHEMA_VERSION, "recording_v0")
@@ -68,21 +67,22 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_new_run_includes_versions(self):
         """New runs should include version fields."""
         run = self.store.start_run("test-run")
-        
+
         self.assertEqual(run.forkline_version, FORKLINE_VERSION)
         self.assertEqual(run.schema_version, SCHEMA_VERSION)
 
     def test_loaded_run_includes_versions(self):
         """Loaded runs should include version fields."""
         self.store.start_run("test-run")
-        
+
         loaded = self.store.load_run("test-run")
-        
+
         self.assertIsNotNone(loaded)
         self.assertEqual(loaded.forkline_version, FORKLINE_VERSION)
         self.assertEqual(loaded.schema_version, SCHEMA_VERSION)
@@ -92,13 +92,16 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
         # Create a legacy database without version columns
         legacy_db_path = os.path.join(self.tmpdir, "legacy.db")
         conn = sqlite3.connect(legacy_db_path)
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE runs (
                 run_id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL
             )
-        """)
-        conn.execute("""
+        """
+        )
+        conn.execute(
+            """
             CREATE TABLE steps (
                 step_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -107,8 +110,10 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
                 started_at TEXT NOT NULL,
                 ended_at TEXT
             )
-        """)
-        conn.execute("""
+        """
+        )
+        conn.execute(
+            """
             CREATE TABLE events (
                 event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -117,7 +122,8 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
                 payload_json TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )
-        """)
+        """
+        )
         # Insert a legacy run without version fields
         conn.execute(
             "INSERT INTO runs (run_id, created_at) VALUES (?, ?)",
@@ -125,11 +131,11 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
         )
         conn.commit()
         conn.close()
-        
+
         # Load with new SQLiteStore - should trigger migration
         store = SQLiteStore(path=legacy_db_path)
         loaded = store.load_run("legacy-run")
-        
+
         # Should get default versions
         self.assertIsNotNone(loaded)
         self.assertEqual(loaded.forkline_version, DEFAULT_FORKLINE_VERSION)
@@ -140,15 +146,18 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
         # Create a DB with version columns but NULL values
         null_db_path = os.path.join(self.tmpdir, "null_versions.db")
         conn = sqlite3.connect(null_db_path)
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE runs (
                 run_id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL,
                 forkline_version TEXT,
                 schema_version TEXT
             )
-        """)
-        conn.execute("""
+        """
+        )
+        conn.execute(
+            """
             CREATE TABLE steps (
                 step_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -157,8 +166,10 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
                 started_at TEXT NOT NULL,
                 ended_at TEXT
             )
-        """)
-        conn.execute("""
+        """
+        )
+        conn.execute(
+            """
             CREATE TABLE events (
                 event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -167,7 +178,8 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
                 payload_json TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )
-        """)
+        """
+        )
         # Insert run with NULL versions
         conn.execute(
             "INSERT INTO runs (run_id, created_at, forkline_version, schema_version) VALUES (?, ?, ?, ?)",
@@ -175,10 +187,10 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
         )
         conn.commit()
         conn.close()
-        
+
         store = SQLiteStore(path=null_db_path)
         loaded = store.load_run("null-run")
-        
+
         # Should get default versions
         self.assertIsNotNone(loaded)
         self.assertEqual(loaded.forkline_version, DEFAULT_FORKLINE_VERSION)
@@ -195,13 +207,14 @@ class TestRunRecorderVersioning(unittest.TestCase):
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_new_run_includes_versions(self):
         """New runs should include version fields."""
         run_id = self.recorder.start_run(entrypoint="test.py")
         run = self.recorder.get_run(run_id)
-        
+
         self.assertIsNotNone(run)
         self.assertEqual(run["forkline_version"], FORKLINE_VERSION)
         self.assertEqual(run["schema_version"], SCHEMA_VERSION)
@@ -211,7 +224,8 @@ class TestRunRecorderVersioning(unittest.TestCase):
         # Create a legacy database with old schema (only schema_version, no forkline_version)
         legacy_db_path = os.path.join(self.tmpdir, "legacy_recorder.db")
         conn = sqlite3.connect(legacy_db_path)
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE runs (
                 run_id TEXT PRIMARY KEY,
                 schema_version TEXT NOT NULL DEFAULT '0.1',
@@ -223,8 +237,10 @@ class TestRunRecorderVersioning(unittest.TestCase):
                 platform TEXT NOT NULL,
                 cwd TEXT NOT NULL
             )
-        """)
-        conn.execute("""
+        """
+        )
+        conn.execute(
+            """
             CREATE TABLE events (
                 event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -232,23 +248,31 @@ class TestRunRecorderVersioning(unittest.TestCase):
                 type TEXT NOT NULL,
                 payload TEXT NOT NULL
             )
-        """)
+        """
+        )
         conn.execute(
             """
             INSERT INTO runs (run_id, schema_version, entrypoint, started_at, 
                              python_version, platform, cwd)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            ("legacy-run", "0.1", "test.py", "2024-01-01T00:00:00Z", 
-             "3.10.0", "linux", "/tmp"),
+            (
+                "legacy-run",
+                "0.1",
+                "test.py",
+                "2024-01-01T00:00:00Z",
+                "3.10.0",
+                "linux",
+                "/tmp",
+            ),
         )
         conn.commit()
         conn.close()
-        
+
         # Load with new RunRecorder - should trigger migration
         recorder = RunRecorder(db_path=legacy_db_path)
         run = recorder.get_run("legacy-run")
-        
+
         # Should get default forkline_version
         self.assertIsNotNone(run)
         self.assertEqual(run["forkline_version"], DEFAULT_FORKLINE_VERSION)
@@ -268,7 +292,7 @@ class TestRunDataclass(unittest.TestCase):
             forkline_version="0.1.1",
             schema_version="recording_v0",
         )
-        
+
         self.assertEqual(run.forkline_version, "0.1.1")
         self.assertEqual(run.schema_version, "recording_v0")
 
@@ -278,7 +302,7 @@ class TestRunDataclass(unittest.TestCase):
             run_id="test",
             created_at="2024-01-01T00:00:00Z",
         )
-        
+
         self.assertIsNone(run.forkline_version)
         self.assertIsNone(run.schema_version)
 
