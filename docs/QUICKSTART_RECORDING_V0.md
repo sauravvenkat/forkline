@@ -170,9 +170,27 @@ recorder = RunRecorder(db_path="path/to/custom.db")
 
 ## Next steps
 
-* Read `docs/RECORDING_V0.md` for full documentation
-* See `IMPLEMENTATION_SUMMARY.md` for implementation details
+* Read `docs/RECORDING_V0.md` for full recording documentation
+* Read `docs/REPLAY_ENGINE_V0.md` for replay and comparison
 * Check out `examples/minimal.py` for a complete example
+
+## Comparing runs (Replay Engine)
+
+Once you have recorded runs, you can compare them:
+
+```python
+from forkline import ReplayEngine, SQLiteStore, ReplayStatus
+
+engine = ReplayEngine(SQLiteStore())
+result = engine.compare_runs("baseline-run-id", "new-run-id")
+
+if result.is_match():
+    print("Runs are identical")
+else:
+    print(f"Diverged: {result.divergence.summary()}")
+```
+
+See `docs/REPLAY_ENGINE_V0.md` for full documentation.
 
 ## Philosophy
 
@@ -186,4 +204,4 @@ If it feels too simple, that's the point.
 
 ---
 
-**Ready to record deterministic runs. Replay coming next.**
+**Ready to record and replay deterministic runs.**

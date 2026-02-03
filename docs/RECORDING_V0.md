@@ -205,12 +205,10 @@ Tests verify:
 * Multiple independent runs
 * Human inspectability with raw SQLite
 
-## What's NOT in v0
+## What's NOT in Recording v0
 
-This is **minimal infrastructure**. The following are explicitly deferred:
+Recording v0 is **minimal infrastructure**. The following are explicitly deferred:
 
-* ❌ Replay logic (comes next)
-* ❌ Diffing
 * ❌ CLI commands
 * ❌ Decorators or automatic tracing
 * ❌ Network exporters
@@ -218,7 +216,7 @@ This is **minimal infrastructure**. The following are explicitly deferred:
 * ❌ Monkey-patching
 * ❌ Agent framework integration
 
-v0 is **just the storage layer**.
+Recording v0 is **just the storage layer**. For replay, see `docs/REPLAY_ENGINE_V0.md`.
 
 ## Schema versioning
 
@@ -256,11 +254,14 @@ with tempfile.TemporaryDirectory() as tmpdir:
 
 ## Next steps
 
-With v0 landed, the next step is:
+With recording v0 complete, replay is now available:
 
-👉 **Replay skeleton + refusal semantics**
+👉 **See `docs/REPLAY_ENGINE_V0.md`** for the deterministic replay engine
 
-This will enable replaying a run without re-invoking LLMs or tools.
+The replay engine enables:
+- Comparing two runs step-by-step
+- Detecting first point of divergence
+- Injecting recorded outputs for deterministic re-execution
 
 ## Philosophy
 

@@ -99,7 +99,7 @@ Breaking changes after v1.0 are strongly discouraged.
 The v0 series is intentionally narrow.
 The goal is to establish a **trustworthy core**, not a feature-rich platform.
 
-### v0.1 — Deterministic recording
+### v0.1 — Deterministic recording ✅
 - Deterministic recording of agent runs
 - Self-contained run artifacts
 - Local storage (file-based or SQLite)
@@ -107,10 +107,12 @@ The goal is to establish a **trustworthy core**, not a feature-rich platform.
 
 ---
 
-### v0.2 — Replay engine
+### v0.2 — Replay engine ✅
 - Replay runs without re-invoking the LLM
 - No network calls during replay
 - Identical behavior guaranteed
+- Step-by-step comparison with first-divergence semantics
+- ReplayContext for injecting recorded outputs
 
 ---
 
