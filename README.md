@@ -31,12 +31,44 @@ Forkline is built to tell you **where**, **when**, and **why**.
 Forkline allows you to:
 
 - **Record** an agent run as a deterministic, local artifact
-- **Replay** that run without re-invoking the LLM
-- **Diff** two runs and detect the **first point of divergence**
+- **Replay** that run without re-invoking the LLM ✅
+- **Diff** two runs and detect the **first point of divergence** ✅
 - **Capture tool calls** safely with deterministic redaction
 - **Use agent workflows in CI** without network calls or flakiness
 
 This turns agent behavior into something you can reason about like code.
+
+---
+
+## Replay (Deterministic)
+
+Replay in Forkline means:
+
+- **Offline execution** — No network calls, no LLM invocations during replay
+- **Artifact injection** — Tool and LLM outputs come from recorded artifacts, not live calls
+- **First-divergence detection** — Comparison halts at the first observable difference
+- **Read-only** — Replay never mutates the original recording
+- **Deterministic** — Same inputs always produce identical comparison results
+
+```python
+from forkline import SQLiteStore, ReplayEngine, ReplayStatus
+
+store = SQLiteStore()
+engine = ReplayEngine(store)
+
+# Record a run (see docs/RECORDING_V0.md)
+# ...
+
+# Compare two recorded runs
+result = engine.compare_runs("baseline-run", "current-run")
+
+if result.status == ReplayStatus.MATCH:
+    print("Runs are identical")
+elif result.status == ReplayStatus.DIVERGED:
+    print(f"Diverged at step {result.divergence.step_idx}: {result.divergence.divergence_type}")
+```
+
+See [`docs/REPLAY_ENGINE_V0.md`](docs/REPLAY_ENGINE_V0.md) for full replay documentation.
 
 ---
 
@@ -54,7 +86,21 @@ python examples/minimal.py
 python scripts/inspect_runs.py
 ```
 
-See [`QUICKSTART_RECORDING_V0.md`](docs/QUICKSTART_RECORDING_V0.md) for full getting started guide.
+### Compare runs
+
+```python
+from forkline import ReplayEngine, SQLiteStore, ReplayStatus
+
+engine = ReplayEngine(SQLiteStore())
+result = engine.compare_runs("baseline-run", "new-run")
+
+if result.is_match():
+    print("No behavioral changes")
+else:
+    print(f"Diverged: {result.divergence.summary()}")
+```
+
+See [`QUICKSTART_RECORDING_V0.md`](docs/QUICKSTART_RECORDING_V0.md) for recording and [`REPLAY_ENGINE_V0.md`](docs/REPLAY_ENGINE_V0.md) for replay.
 
 ---
 
@@ -183,12 +229,15 @@ Any future UI must be a thin layer on top — never the other way around.
 
 Forkline explicitly does **not** aim to be:
 
-- An evaluation or benchmarking framework
-- Prompt engineering or prompt optimization tooling
-- A hosted SaaS or dashboard product
-- A generic “AI observability” platform
+- **OpenTelemetry or distributed tracing** — No spans, traces, or exporters
+- **Production observability** — Not for real-time monitoring or alerting
+- **An evaluation or benchmarking framework** — Not for scoring or ranking models
+- **Prompt engineering tooling** — Not for A/B testing or prompt optimization
+- **A hosted SaaS or dashboard product** — Local-first, no cloud dependencies
 
-Forkline is a debugging and reproducibility tool, not an analytics product.
+Forkline is offline forensic debugging infrastructure, not an analytics or observability platform.
+
+For recording schema details, see [`docs/RECORDING_V0.md`](docs/RECORDING_V0.md).
 
 ---
 
@@ -198,15 +247,15 @@ Forkline follows a disciplined, execution-first roadmap.
 
 The v0 series focuses on **correctness and determinism**, not polish.
 
-1. Deterministic run recording  
-2. Offline replay engine  
-3. First-divergence diffing  
+1. ✅ Deterministic run recording  
+2. ✅ Offline replay engine  
+3. ✅ First-divergence diffing  
 4. Minimal CLI (`run`, `replay`, `diff`)  
 5. CI-friendly deterministic mode  
 
 The canonical roadmap and design contract live here:
 
-👉 `docs/ROADMAP.md`
+👉 [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 ---
 

@@ -19,7 +19,7 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests
       - name: Install linters
-        run: pip install black ruff
+        run: pip install 'black~=25.0' ruff
       - name: Format check (black)
         run: black --check .
       - name: Lint (ruff)

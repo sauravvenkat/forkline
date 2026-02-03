@@ -17,6 +17,12 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from forkline.core.redaction import RedactionPolicy, create_default_policy
+from forkline.version import (
+    DEFAULT_FORKLINE_VERSION,
+    DEFAULT_SCHEMA_VERSION,
+    FORKLINE_VERSION,
+    SCHEMA_VERSION,
+)
 
 
 @dataclass
@@ -52,10 +58,12 @@ class RunRecorder:
         """Initialize runs.db with versioned schema."""
         with self._connect() as conn:
             # Runs table with versioned schema
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS runs (
                     run_id TEXT PRIMARY KEY,
-                    schema_version TEXT NOT NULL DEFAULT '0.1',
+                    schema_version TEXT NOT NULL,
+                    forkline_version TEXT NOT NULL,
                     entrypoint TEXT NOT NULL,
                     started_at TEXT NOT NULL,
                     ended_at TEXT,
@@ -64,10 +72,15 @@ class RunRecorder:
                     platform TEXT NOT NULL,
                     cwd TEXT NOT NULL
                 )
-                """)
+                """
+            )
+
+            # Migration: add forkline_version column if it doesn't exist
+            self._migrate_add_forkline_version(conn)
 
             # Events table - append-only
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS events (
                     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     run_id TEXT NOT NULL,
@@ -76,13 +89,26 @@ class RunRecorder:
                     payload TEXT NOT NULL,
                     FOREIGN KEY (run_id) REFERENCES runs(run_id)
                 )
-                """)
+                """
+            )
 
             # Index for fast event retrieval
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_events_run_id 
                 ON events(run_id, event_id)
-                """)
+                """
+            )
+
+    def _migrate_add_forkline_version(self, conn: sqlite3.Connection) -> None:
+        """Migration: add forkline_version column to existing databases."""
+        try:
+            conn.execute("SELECT forkline_version FROM runs LIMIT 1")
+        except sqlite3.OperationalError:
+            try:
+                conn.execute("ALTER TABLE runs ADD COLUMN forkline_version TEXT")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
 
     def _utc_now(self) -> str:
         """ISO8601 UTC timestamp."""
@@ -117,13 +143,14 @@ class RunRecorder:
             conn.execute(
                 """
                 INSERT INTO runs 
-                (run_id, schema_version, entrypoint, started_at, 
+                (run_id, schema_version, forkline_version, entrypoint, started_at, 
                  python_version, platform, cwd)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     run_id,
-                    "0.1",
+                    SCHEMA_VERSION,
+                    FORKLINE_VERSION,
                     entrypoint,
                     started_at,
                     env["python_version"],
@@ -204,8 +231,8 @@ class RunRecorder:
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT run_id, schema_version, entrypoint, started_at, ended_at,
-                       status, python_version, platform, cwd
+                SELECT run_id, schema_version, forkline_version, entrypoint, 
+                       started_at, ended_at, status, python_version, platform, cwd
                 FROM runs
                 WHERE run_id = ?
                 """,
@@ -215,7 +242,15 @@ class RunRecorder:
             if row is None:
                 return None
 
-            return dict(row)
+            result = dict(row)
+
+            # Backward compatibility: use defaults for older artifacts
+            if result.get("schema_version") is None:
+                result["schema_version"] = DEFAULT_SCHEMA_VERSION
+            if result.get("forkline_version") is None:
+                result["forkline_version"] = DEFAULT_FORKLINE_VERSION
+
+            return result
 
     def get_events(self, run_id: str) -> list[Dict[str, Any]]:
         """

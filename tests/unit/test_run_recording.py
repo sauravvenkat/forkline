@@ -28,6 +28,8 @@ class TestRunRecorder(unittest.TestCase):
 
     def test_start_run_creates_versioned_record(self):
         """Test that starting a run creates a versioned record with env snapshot."""
+        from forkline import FORKLINE_VERSION, SCHEMA_VERSION
+
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test.db")
             recorder = RunRecorder(db_path=db_path)
@@ -37,7 +39,8 @@ class TestRunRecorder(unittest.TestCase):
             run = recorder.get_run(run_id)
             self.assertIsNotNone(run)
             self.assertEqual(run["run_id"], run_id)
-            self.assertEqual(run["schema_version"], "0.1")
+            self.assertEqual(run["schema_version"], SCHEMA_VERSION)
+            self.assertEqual(run["forkline_version"], FORKLINE_VERSION)
             self.assertEqual(run["entrypoint"], "test/example.py")
             self.assertIsNotNone(run["started_at"])
             self.assertIsNone(run["ended_at"])

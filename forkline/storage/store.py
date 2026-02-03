@@ -8,6 +8,12 @@ from datetime import datetime, timezone
 from typing import Iterable, Optional
 
 from ..core.types import Event, Run, Step
+from ..version import (
+    DEFAULT_FORKLINE_VERSION,
+    DEFAULT_SCHEMA_VERSION,
+    FORKLINE_VERSION,
+    SCHEMA_VERSION,
+)
 
 
 @dataclass
@@ -25,13 +31,21 @@ class SQLiteStore:
 
     def _init_db(self) -> None:
         with self._connect() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS runs (
                     run_id TEXT PRIMARY KEY,
-                    created_at TEXT NOT NULL
+                    created_at TEXT NOT NULL,
+                    forkline_version TEXT,
+                    schema_version TEXT
                 )
-                """)
-            conn.execute("""
+                """
+            )
+
+            # Migration: add version columns if they don't exist (for older DBs)
+            self._migrate_add_version_columns(conn)
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS steps (
                     step_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     run_id TEXT NOT NULL,
@@ -40,8 +54,11 @@ class SQLiteStore:
                     started_at TEXT NOT NULL,
                     ended_at TEXT
                 )
-                """)
-            conn.execute("""
+                """
+            )
+
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS events (
                     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     run_id TEXT NOT NULL,
@@ -50,7 +67,29 @@ class SQLiteStore:
                     payload_json TEXT NOT NULL,
                     created_at TEXT NOT NULL
                 )
-                """)
+                """
+            )
+
+    def _migrate_add_version_columns(self, conn: sqlite3.Connection) -> None:
+        """
+        Migration: add version columns to existing databases.
+
+        This enables backward compatibility with older artifacts that
+        don't have version fields.
+        """
+        # Check if columns exist by trying to select them
+        try:
+            conn.execute("SELECT forkline_version, schema_version FROM runs LIMIT 1")
+        except sqlite3.OperationalError:
+            # Columns don't exist, add them
+            try:
+                conn.execute("ALTER TABLE runs ADD COLUMN forkline_version TEXT")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            try:
+                conn.execute("ALTER TABLE runs ADD COLUMN schema_version TEXT")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
 
     def _utc_now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
@@ -59,10 +98,20 @@ class SQLiteStore:
         created_at = self._utc_now()
         with self._connect() as conn:
             conn.execute(
-                "INSERT OR REPLACE INTO runs (run_id, created_at) VALUES (?, ?)",
-                (run_id, created_at),
+                """
+                INSERT OR REPLACE INTO runs 
+                (run_id, created_at, forkline_version, schema_version) 
+                VALUES (?, ?, ?, ?)
+                """,
+                (run_id, created_at, FORKLINE_VERSION, SCHEMA_VERSION),
             )
-        return Run(run_id=run_id, created_at=created_at, steps=[])
+        return Run(
+            run_id=run_id,
+            created_at=created_at,
+            steps=[],
+            forkline_version=FORKLINE_VERSION,
+            schema_version=SCHEMA_VERSION,
+        )
 
     def start_step(self, run_id: str, idx: int, name: str) -> Step:
         started_at = self._utc_now()
@@ -143,13 +192,33 @@ class SQLiteStore:
     def load_run(self, run_id: str) -> Optional[Run]:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT run_id, created_at FROM runs WHERE run_id = ?",
+                """
+                SELECT run_id, created_at, forkline_version, schema_version 
+                FROM runs WHERE run_id = ?
+                """,
                 (run_id,),
             ).fetchone()
             if row is None:
                 return None
+
         steps = self._load_steps(run_id)
-        return Run(run_id=row["run_id"], created_at=row["created_at"], steps=steps)
+
+        # Backward compat: use defaults for older artifacts missing version fields
+        forkline_version = row["forkline_version"]
+        schema_version = row["schema_version"]
+
+        if forkline_version is None:
+            forkline_version = DEFAULT_FORKLINE_VERSION
+        if schema_version is None:
+            schema_version = DEFAULT_SCHEMA_VERSION
+
+        return Run(
+            run_id=row["run_id"],
+            created_at=row["created_at"],
+            steps=steps,
+            forkline_version=forkline_version,
+            schema_version=schema_version,
+        )
 
     def _load_steps(self, run_id: str) -> list[Step]:
         with self._connect() as conn:
