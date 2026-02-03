@@ -92,16 +92,13 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
         # Create a legacy database without version columns
         legacy_db_path = os.path.join(self.tmpdir, "legacy.db")
         conn = sqlite3.connect(legacy_db_path)
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE runs (
                 run_id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL
             )
-        """
-        )
-        conn.execute(
-            """
+        """)
+        conn.execute("""
             CREATE TABLE steps (
                 step_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -110,10 +107,8 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
                 started_at TEXT NOT NULL,
                 ended_at TEXT
             )
-        """
-        )
-        conn.execute(
-            """
+        """)
+        conn.execute("""
             CREATE TABLE events (
                 event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -122,8 +117,7 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
                 payload_json TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )
-        """
-        )
+        """)
         # Insert a legacy run without version fields
         conn.execute(
             "INSERT INTO runs (run_id, created_at) VALUES (?, ?)",
@@ -146,18 +140,15 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
         # Create a DB with version columns but NULL values
         null_db_path = os.path.join(self.tmpdir, "null_versions.db")
         conn = sqlite3.connect(null_db_path)
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE runs (
                 run_id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL,
                 forkline_version TEXT,
                 schema_version TEXT
             )
-        """
-        )
-        conn.execute(
-            """
+        """)
+        conn.execute("""
             CREATE TABLE steps (
                 step_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -166,10 +157,8 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
                 started_at TEXT NOT NULL,
                 ended_at TEXT
             )
-        """
-        )
-        conn.execute(
-            """
+        """)
+        conn.execute("""
             CREATE TABLE events (
                 event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -178,8 +167,7 @@ class TestSQLiteStoreVersioning(unittest.TestCase):
                 payload_json TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )
-        """
-        )
+        """)
         # Insert run with NULL versions
         conn.execute(
             """
@@ -227,8 +215,7 @@ class TestRunRecorderVersioning(unittest.TestCase):
         # Create a legacy database with old schema (no forkline_version column)
         legacy_db_path = os.path.join(self.tmpdir, "legacy_recorder.db")
         conn = sqlite3.connect(legacy_db_path)
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE runs (
                 run_id TEXT PRIMARY KEY,
                 schema_version TEXT NOT NULL DEFAULT '0.1',
@@ -240,10 +227,8 @@ class TestRunRecorderVersioning(unittest.TestCase):
                 platform TEXT NOT NULL,
                 cwd TEXT NOT NULL
             )
-        """
-        )
-        conn.execute(
-            """
+        """)
+        conn.execute("""
             CREATE TABLE events (
                 event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT NOT NULL,
@@ -251,8 +236,7 @@ class TestRunRecorderVersioning(unittest.TestCase):
                 type TEXT NOT NULL,
                 payload TEXT NOT NULL
             )
-        """
-        )
+        """)
         conn.execute(
             """
             INSERT INTO runs (run_id, schema_version, entrypoint, started_at, 

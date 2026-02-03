@@ -10,21 +10,21 @@ from .redaction import (
 from .replay import (
     # Exceptions
     DeterminismViolationError,
-    MissingArtifactError,
-    ReplayError,
-    ReplayOrderError,
     # Data models
     Divergence,
     DivergencePoint,
     DivergenceReason,
     FieldDiff,
+    MissingArtifactError,
+    # Engine and context
+    ReplayContext,
+    ReplayEngine,
+    ReplayError,
+    ReplayOrderError,
     ReplayPolicy,
     ReplayResult,
     ReplayStatus,
     ReplayStepResult,
-    # Engine and context
-    ReplayContext,
-    ReplayEngine,
     # Replay mode guardrails
     assert_not_in_replay_mode,
     compare_events,

@@ -89,13 +89,11 @@ def main():
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
 
-        runs = conn.execute(
-            """
+        runs = conn.execute("""
             SELECT run_id, entrypoint, status, started_at 
             FROM runs 
             ORDER BY started_at DESC
-            """
-        ).fetchall()
+            """).fetchall()
 
         if not runs:
             print("No runs found in database")

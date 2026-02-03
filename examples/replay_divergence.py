@@ -20,7 +20,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from forkline import ReplayEngine, SQLiteStore
 
-
 # =============================================================================
 # Stubbed Adapters (no real LLM/tool calls)
 # =============================================================================
