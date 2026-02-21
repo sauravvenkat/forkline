@@ -12,13 +12,10 @@ import unittest
 from forkline.core.canon import bytes_preview, canon, sha256_hex
 from forkline.core.first_divergence import (
     DivergenceType,
-    FirstDivergenceResult,
-    StepSummary,
     find_first_divergence,
 )
 from forkline.core.json_diff import json_diff
 from forkline.core.types import Event, Run, Step
-
 
 # ---------------------------------------------------------------------------
 # Helpers

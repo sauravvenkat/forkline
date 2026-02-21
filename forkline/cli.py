@@ -16,7 +16,6 @@ import sys
 from .core.first_divergence import DivergenceType, find_first_divergence
 from .storage.store import SQLiteStore
 
-
 # ---------------------------------------------------------------------------
 # Text formatter
 # ---------------------------------------------------------------------------

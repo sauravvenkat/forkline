@@ -14,12 +14,12 @@ Algorithm:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from .canon import canon, sha256_hex
 from .json_diff import json_diff
-from .types import Event, Run, Step
+from .types import Run, Step
 
 
 class DivergenceType:

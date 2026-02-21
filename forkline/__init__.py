@@ -1,21 +1,21 @@
 from .core import (
+    # First-divergence diffing
+    DivergenceType,
     # Core types
     Event,
+    FirstDivergenceResult,
     # Redaction
     RedactionAction,
     RedactionRule,
     Run,
     Step,
+    StepSummary,
+    # Canonicalization
+    canon,
     create_default_policy,
     # Diff
     diff_runs,
-    # First-divergence diffing
-    DivergenceType,
-    FirstDivergenceResult,
-    StepSummary,
     find_first_divergence,
-    # Canonicalization
-    canon,
     json_diff,
     sha256_hex,
 )
