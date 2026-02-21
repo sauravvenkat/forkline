@@ -6,6 +6,7 @@ Usage:
     forkline diff --first <run_a> <run_b> [--window N] [--format json|text]
                   [--show input|output|both] [--canon strict] [--db PATH]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -72,9 +73,7 @@ def _format_text(result) -> str:
         for op in result.input_diff[:10]:
             lines.append(f"    {op['op']} {op['path']}: {_compact_value(op)}")
         if len(result.input_diff) > 10:
-            lines.append(
-                f"    ... and {len(result.input_diff) - 10} more operations"
-            )
+            lines.append(f"    ... and {len(result.input_diff) - 10} more operations")
         lines.append("")
 
     if result.output_diff:
@@ -82,9 +81,7 @@ def _format_text(result) -> str:
         for op in result.output_diff[:10]:
             lines.append(f"    {op['op']} {op['path']}: {_compact_value(op)}")
         if len(result.output_diff) > 10:
-            lines.append(
-                f"    ... and {len(result.output_diff) - 10} more operations"
-            )
+            lines.append(f"    ... and {len(result.output_diff) - 10} more operations")
         lines.append("")
 
     lines.append(f"  Last equal: step {result.last_equal_idx}")

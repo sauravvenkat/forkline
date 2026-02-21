@@ -11,6 +11,7 @@ Algorithm:
 4. If resync fails, classify by what differs: op > input > error > output.
 5. Return structured result with context, diffs, and deterministic explanation.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -124,9 +125,7 @@ def _make_summary(step: Step) -> StepSummary:
     )
 
 
-def _get_context(
-    steps: List[Step], center: int, size: int = 2
-) -> List[StepSummary]:
+def _get_context(steps: List[Step], center: int, size: int = 2) -> List[StepSummary]:
     start = max(0, center - size)
     end = min(len(steps), center + size + 1)
     return [_make_summary(steps[i]) for i in range(start, end)]
@@ -365,9 +364,7 @@ def find_first_divergence(
             # Both gaps > 0: steps were replaced — fall through to classify
 
         # No resync or replacement — classify at current position
-        input_diff, output_diff = _compute_diffs(
-            steps_a[i], steps_b[i], dtype, show
-        )
+        input_diff, output_diff = _compute_diffs(steps_a[i], steps_b[i], dtype, show)
         return FirstDivergenceResult(
             status=dtype,
             idx_a=i,
@@ -405,9 +402,7 @@ def find_first_divergence(
             last_equal_idx=last_equal,
             context_a=_get_context(steps_a, idx, context_size),
             context_b=(
-                _get_context(steps_b, len(steps_b) - 1, context_size)
-                if steps_b
-                else []
+                _get_context(steps_b, len(steps_b) - 1, context_size) if steps_b else []
             ),
         )
 
@@ -432,9 +427,7 @@ def find_first_divergence(
             output_diff=None,
             last_equal_idx=last_equal,
             context_a=(
-                _get_context(steps_a, len(steps_a) - 1, context_size)
-                if steps_a
-                else []
+                _get_context(steps_a, len(steps_a) - 1, context_size) if steps_a else []
             ),
             context_b=_get_context(steps_b, idx, context_size),
         )

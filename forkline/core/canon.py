@@ -11,6 +11,7 @@ Guarantees:
 - Floats use repr-level precision; -0.0 collapses to 0.0
 - Bytes pass through unchanged
 """
+
 from __future__ import annotations
 
 import hashlib

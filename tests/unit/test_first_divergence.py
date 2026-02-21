@@ -3,6 +3,7 @@
 All tests are hermetic — no database, no disk I/O, no network calls.
 Run objects are constructed in-memory from frozen dataclasses.
 """
+
 from __future__ import annotations
 
 import json
@@ -35,7 +36,9 @@ def _evt(step_idx: int, typ: str, payload: dict, run_id: str = "test") -> Event:
     )
 
 
-def _step(idx: int, name: str, events: list[Event] | None = None, run_id: str = "test") -> Step:
+def _step(
+    idx: int, name: str, events: list[Event] | None = None, run_id: str = "test"
+) -> Step:
     return Step(
         step_id=None,
         run_id=run_id,
@@ -47,9 +50,7 @@ def _step(idx: int, name: str, events: list[Event] | None = None, run_id: str = 
     )
 
 
-def _step_io(
-    idx: int, name: str, inp: dict, out: dict, run_id: str = "test"
-) -> Step:
+def _step_io(idx: int, name: str, inp: dict, out: dict, run_id: str = "test") -> Step:
     return _step(
         idx,
         name,
@@ -69,7 +70,9 @@ def _run(run_id: str, steps: list[Step]) -> Run:
 
 class TestCanonStability(unittest.TestCase):
     def test_dict_key_order_irrelevant(self):
-        self.assertEqual(canon({"z": 1, "a": 2, "m": 3}), canon({"a": 2, "m": 3, "z": 1}))
+        self.assertEqual(
+            canon({"z": 1, "a": 2, "m": 3}), canon({"a": 2, "m": 3, "z": 1})
+        )
 
     def test_nested_dict_stability(self):
         a = {"outer": {"b": 2, "a": 1}, "list": [3, 2, 1]}
@@ -234,14 +237,20 @@ class TestFirstDivergenceEngine(unittest.TestCase):
 
     def test_output_divergence_same_input(self):
         """b) output divergence same input => output_divergence"""
-        run_a = _run("a", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "generate", {"prompt": "hi"}, {"text": "hello"}),
-        ])
-        run_b = _run("b", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "generate", {"prompt": "hi"}, {"text": "hey"}),
-        ])
+        run_a = _run(
+            "a",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "generate", {"prompt": "hi"}, {"text": "hello"}),
+            ],
+        )
+        run_b = _run(
+            "b",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "generate", {"prompt": "hi"}, {"text": "hey"}),
+            ],
+        )
 
         result = find_first_divergence(run_a, run_b)
 
@@ -254,19 +263,25 @@ class TestFirstDivergenceEngine(unittest.TestCase):
 
     def test_inserted_step_extra_steps(self):
         """c) inserted step in run_b => extra_steps at insertion point"""
-        run_a = _run("a", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "step_one", {"a": 1}, {"b": 2}),
-            _step_io(2, "step_two", {"c": 3}, {"d": 4}),
-            _step_io(3, "finalize", {"ok": True}, {"done": True}),
-        ])
-        run_b = _run("b", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "step_one", {"a": 1}, {"b": 2}),
-            _step_io(2, "extra_step", {"extra": True}, {"extra_out": True}),
-            _step_io(3, "step_two", {"c": 3}, {"d": 4}),
-            _step_io(4, "finalize", {"ok": True}, {"done": True}),
-        ])
+        run_a = _run(
+            "a",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "step_one", {"a": 1}, {"b": 2}),
+                _step_io(2, "step_two", {"c": 3}, {"d": 4}),
+                _step_io(3, "finalize", {"ok": True}, {"done": True}),
+            ],
+        )
+        run_b = _run(
+            "b",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "step_one", {"a": 1}, {"b": 2}),
+                _step_io(2, "extra_step", {"extra": True}, {"extra_out": True}),
+                _step_io(3, "step_two", {"c": 3}, {"d": 4}),
+                _step_io(4, "finalize", {"ok": True}, {"done": True}),
+            ],
+        )
 
         result = find_first_divergence(run_a, run_b)
 
@@ -276,14 +291,20 @@ class TestFirstDivergenceEngine(unittest.TestCase):
 
     def test_run_b_shorter_missing_steps(self):
         """d) run_b shorter => missing_steps"""
-        run_a = _run("a", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "process", {"a": 1}, {"b": 2}),
-            _step_io(2, "finalize", {"ok": True}, {"done": True}),
-        ])
-        run_b = _run("b", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-        ])
+        run_a = _run(
+            "a",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "process", {"a": 1}, {"b": 2}),
+                _step_io(2, "finalize", {"ok": True}, {"done": True}),
+            ],
+        )
+        run_b = _run(
+            "b",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+            ],
+        )
 
         result = find_first_divergence(run_a, run_b)
 
@@ -294,16 +315,22 @@ class TestFirstDivergenceEngine(unittest.TestCase):
 
     def test_op_mismatch_no_resync(self):
         """e) op mismatch without resync => op_divergence"""
-        run_a = _run("a", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "process_a", {"a": 1}, {"b": 2}),
-            _step_io(2, "cleanup_a", {"c": 3}, {"d": 4}),
-        ])
-        run_b = _run("b", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "process_b", {"e": 5}, {"f": 6}),
-            _step_io(2, "cleanup_b", {"g": 7}, {"h": 8}),
-        ])
+        run_a = _run(
+            "a",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "process_a", {"a": 1}, {"b": 2}),
+                _step_io(2, "cleanup_a", {"c": 3}, {"d": 4}),
+            ],
+        )
+        run_b = _run(
+            "b",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "process_b", {"e": 5}, {"f": 6}),
+                _step_io(2, "cleanup_b", {"g": 7}, {"h": 8}),
+            ],
+        )
 
         result = find_first_divergence(run_a, run_b)
 
@@ -320,30 +347,50 @@ class TestFirstDivergenceEngine(unittest.TestCase):
 
     def test_error_divergence(self):
         """One step has an error event, the other doesn't."""
-        run_a = _run("a", [
-            _step(0, "process", [
-                _evt(0, "input", {"x": 1}),
-                _evt(0, "output", {"y": 2}),
-            ]),
-        ])
-        run_b = _run("b", [
-            _step(0, "process", [
-                _evt(0, "input", {"x": 1}),
-                _evt(0, "error", {"message": "failed"}),
-            ]),
-        ])
+        run_a = _run(
+            "a",
+            [
+                _step(
+                    0,
+                    "process",
+                    [
+                        _evt(0, "input", {"x": 1}),
+                        _evt(0, "output", {"y": 2}),
+                    ],
+                ),
+            ],
+        )
+        run_b = _run(
+            "b",
+            [
+                _step(
+                    0,
+                    "process",
+                    [
+                        _evt(0, "input", {"x": 1}),
+                        _evt(0, "error", {"message": "failed"}),
+                    ],
+                ),
+            ],
+        )
 
         result = find_first_divergence(run_a, run_b)
         self.assertEqual(result.status, DivergenceType.ERROR_DIVERGENCE)
 
     def test_input_divergence(self):
         """Same step name but different input."""
-        run_a = _run("a", [
-            _step_io(0, "process", {"prompt": "hello"}, {"result": "world"}),
-        ])
-        run_b = _run("b", [
-            _step_io(0, "process", {"prompt": "goodbye"}, {"result": "world"}),
-        ])
+        run_a = _run(
+            "a",
+            [
+                _step_io(0, "process", {"prompt": "hello"}, {"result": "world"}),
+            ],
+        )
+        run_b = _run(
+            "b",
+            [
+                _step_io(0, "process", {"prompt": "goodbye"}, {"result": "world"}),
+            ],
+        )
 
         result = find_first_divergence(run_a, run_b)
 
@@ -367,9 +414,7 @@ class TestFirstDivergenceEngine(unittest.TestCase):
 
     def test_context_window(self):
         """Context includes steps before and after divergence."""
-        steps = [
-            _step_io(i, f"step_{i}", {"i": i}, {"o": i}) for i in range(6)
-        ]
+        steps = [_step_io(i, f"step_{i}", {"i": i}, {"o": i}) for i in range(6)]
         run_a = _run("a", steps)
         steps_b = list(steps)
         steps_b[3] = _step_io(3, "step_3", {"i": 3}, {"o": 999})
@@ -383,14 +428,20 @@ class TestFirstDivergenceEngine(unittest.TestCase):
 
     def test_deterministic_across_invocations(self):
         """Same inputs always produce identical results."""
-        run_a = _run("a", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "process", {"data": [1, 2, 3]}, {"sum": 6}),
-        ])
-        run_b = _run("b", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "process", {"data": [1, 2, 3]}, {"sum": 7}),
-        ])
+        run_a = _run(
+            "a",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "process", {"data": [1, 2, 3]}, {"sum": 6}),
+            ],
+        )
+        run_b = _run(
+            "b",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "process", {"data": [1, 2, 3]}, {"sum": 7}),
+            ],
+        )
 
         results = [find_first_divergence(run_a, run_b).to_dict() for _ in range(50)]
         for r in results[1:]:
@@ -398,14 +449,20 @@ class TestFirstDivergenceEngine(unittest.TestCase):
 
     def test_run_a_shorter_extra_steps(self):
         """run_a shorter than run_b => extra_steps in run_b."""
-        run_a = _run("a", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-        ])
-        run_b = _run("b", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "extra", {"e": 1}, {"e": 2}),
-            _step_io(2, "extra2", {"e": 3}, {"e": 4}),
-        ])
+        run_a = _run(
+            "a",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+            ],
+        )
+        run_b = _run(
+            "b",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "extra", {"e": 1}, {"e": 2}),
+                _step_io(2, "extra2", {"e": 3}, {"e": 4}),
+            ],
+        )
 
         result = find_first_divergence(run_a, run_b)
 
@@ -415,15 +472,21 @@ class TestFirstDivergenceEngine(unittest.TestCase):
 
     def test_deleted_step_missing_steps_via_resync(self):
         """Step removed from run_b detected via resync as missing_steps."""
-        run_a = _run("a", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "middle", {"m": 1}, {"m": 2}),
-            _step_io(2, "end", {"z": 9}, {"z": 10}),
-        ])
-        run_b = _run("b", [
-            _step_io(0, "init", {"x": 1}, {"y": 2}),
-            _step_io(1, "end", {"z": 9}, {"z": 10}),
-        ])
+        run_a = _run(
+            "a",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "middle", {"m": 1}, {"m": 2}),
+                _step_io(2, "end", {"z": 9}, {"z": 10}),
+            ],
+        )
+        run_b = _run(
+            "b",
+            [
+                _step_io(0, "init", {"x": 1}, {"y": 2}),
+                _step_io(1, "end", {"z": 9}, {"z": 10}),
+            ],
+        )
 
         result = find_first_divergence(run_a, run_b)
 
@@ -440,7 +503,14 @@ class TestFirstDivergenceEngine(unittest.TestCase):
         )
         self.assertIsNotNone(result.old_step)
         d = result.old_step.to_dict()
-        for field in ("idx", "name", "input_hash", "output_hash", "event_count", "has_error"):
+        for field in (
+            "idx",
+            "name",
+            "input_hash",
+            "output_hash",
+            "event_count",
+            "has_error",
+        ):
             self.assertIn(field, d)
 
     def test_show_input_only(self):

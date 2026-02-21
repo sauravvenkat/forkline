@@ -13,6 +13,7 @@ Output patch format:
      {"op":"add","path":"$.x","value":...},
      {"op":"replace","path":"$.k","old":...,"new":...}]
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List
