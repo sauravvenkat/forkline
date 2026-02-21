@@ -1,14 +1,23 @@
 from .core import (
+    # First-divergence diffing
+    DivergenceType,
     # Core types
     Event,
+    FirstDivergenceResult,
     # Redaction
     RedactionAction,
     RedactionRule,
     Run,
     Step,
+    StepSummary,
+    # Canonicalization
+    canon,
     create_default_policy,
     # Diff
     diff_runs,
+    find_first_divergence,
+    json_diff,
+    sha256_hex,
 )
 from .core.redaction import RedactionPolicy
 from .core.replay import (
@@ -65,8 +74,17 @@ __all__ = [
     "Tracer",
     "SQLiteStore",
     "RunRecorder",
+    # Canonicalization
+    "canon",
+    "sha256_hex",
+    "json_diff",
     # Diff
     "diff_runs",
+    # First-divergence diffing
+    "find_first_divergence",
+    "FirstDivergenceResult",
+    "StepSummary",
+    "DivergenceType",
     # Redaction
     "RedactionAction",
     "RedactionPolicy",
