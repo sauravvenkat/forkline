@@ -1,6 +1,14 @@
 """Core types and logic for Forkline."""
 
+from .canon import bytes_preview, canon, sha256_hex
 from .diff import diff_runs
+from .first_divergence import (
+    DivergenceType,
+    FirstDivergenceResult,
+    StepSummary,
+    find_first_divergence,
+)
+from .json_diff import json_diff
 from .redaction import (
     RedactionAction,
     RedactionPolicy,
@@ -44,8 +52,18 @@ __all__ = [
     "Event",
     "Run",
     "Step",
+    # Canonicalization
+    "canon",
+    "sha256_hex",
+    "bytes_preview",
     # Diff
     "diff_runs",
+    # First-divergence diffing
+    "find_first_divergence",
+    "FirstDivergenceResult",
+    "StepSummary",
+    "DivergenceType",
+    "json_diff",
     # Redaction
     "RedactionAction",
     "RedactionPolicy",

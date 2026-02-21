@@ -13,8 +13,11 @@ authors = [
   { name = "Forkline Contributors" }
 ]
 
+[project.scripts]
+forkline = "forkline.cli:main"
+
 [tool.setuptools]
-packages = ["forkline"]
+packages = ["forkline", "forkline.core", "forkline.storage", "forkline.tracer"]
 
 [tool.black]
 line-length = 88

@@ -225,6 +225,93 @@ Any future UI must be a thin layer on top — never the other way around.
 
 ---
 
+## First-Divergence Diffing
+
+Forkline can compare two recorded runs and identify the **first point of divergence** with deterministic classification, structured diffs, and a resync window that handles inserted/deleted steps.
+
+### CLI Usage
+
+```bash
+# Text output (default)
+forkline diff --first run_a_id run_b_id
+
+# JSON output
+forkline diff --first run_a_id run_b_id --format json
+
+# Custom database path and resync window
+forkline diff --first run_a_id run_b_id --db runs.db --window 20
+
+# Show only output diffs
+forkline diff --first run_a_id run_b_id --show output
+```
+
+### Programmatic Usage
+
+```python
+from forkline import SQLiteStore
+from forkline.core.first_divergence import find_first_divergence, DivergenceType
+
+store = SQLiteStore()
+run_a = store.load_run("baseline")
+run_b = store.load_run("current")
+
+result = find_first_divergence(run_a, run_b)
+
+if result.status == DivergenceType.EXACT_MATCH:
+    print("Runs are identical")
+else:
+    print(f"Diverged: {result.explanation}")
+    print(f"  Type: {result.status}")
+    print(f"  At: step {result.idx_a} (run_a) / step {result.idx_b} (run_b)")
+    if result.output_diff:
+        for op in result.output_diff:
+            print(f"  {op['op']} {op['path']}")
+```
+
+### Sample Output
+
+```
+First divergence: output_divergence
+  Step 2 'generate_response': output differs (same input)
+
+  Run A step 2 'generate_response':
+    input_hash:  a1b2c3d4e5f6a7b8...
+    output_hash: 1234567890abcdef...
+    events: 3
+    has_error: False
+
+  Run B step 2 'generate_response':
+    input_hash:  a1b2c3d4e5f6a7b8...
+    output_hash: fedcba0987654321...
+    events: 3
+    has_error: False
+
+  Output diff:
+    replace $.result.text: "Expected response" -> "Different response"
+
+  Last equal: step 1
+  Context A: [step 0 'init', step 1 'prepare', step 2 'generate_response']
+  Context B: [step 0 'init', step 1 'prepare', step 2 'generate_response']
+```
+
+### Divergence Types
+
+| Type | Meaning |
+|------|---------|
+| `exact_match` | Runs are identical |
+| `input_divergence` | Same step name, different input |
+| `output_divergence` | Same step name and input, different output |
+| `op_divergence` | Step names differ at same position |
+| `missing_steps` | Steps in run_a not present in run_b |
+| `extra_steps` | Steps in run_b not present in run_a |
+| `error_divergence` | Error state differs between steps |
+
+### How Resync Works
+
+When a mismatch is found, the engine searches within a configurable window (default 10 steps) for matching "soft signatures" `(step_name, input_hash)`. This correctly identifies inserted or deleted steps rather than reporting every subsequent step as divergent.
+
+---
+
 ## What Forkline is NOT
 
 Forkline explicitly does **not** aim to be:

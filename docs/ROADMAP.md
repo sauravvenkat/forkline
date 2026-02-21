@@ -116,19 +116,23 @@ The goal is to establish a **trustworthy core**, not a feature-rich platform.
 
 ---
 
-### v0.3 — Diffing
+### v0.3 — First-divergence diffing ✅
 - Step-by-step comparison of two runs
-- Detection of first divergence
-- Clear presentation of old vs new state
+- Detection of first divergence with resync window
+- Deterministic canonicalization (NFC unicode, sorted keys, stable floats)
+- Structured JSON diff patches (add/remove/replace with stable ordering)
+- Seven divergence types: exact_match, input/output/op/error divergence, missing/extra steps
+- Clear presentation of old vs new state with context window
+- JSON-serializable `FirstDivergenceResult`
 
 ---
 
-### v0.4 — Minimal CLI
+### v0.4 — Minimal CLI (in progress)
+- `forkline diff --first` ✅
 - `forkline run`
 - `forkline replay`
-- `forkline diff`
-- Human-readable output
-- Scriptable exit codes
+- Human-readable text output and JSON output ✅
+- Scriptable exit codes ✅
 
 ---
 
