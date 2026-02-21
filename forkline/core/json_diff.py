@@ -3,7 +3,7 @@
 Produces a stable, ordered list of diff operations for JSON-like values.
 
 Ordering guarantees:
-- dict: removed keys (sorted), then added keys (sorted), 
+- dict: removed keys (sorted), then added keys (sorted),
 then common keys (sorted, recursed)
 - list: by index; removes at tail, then adds at tail
 - Type mismatch: replace whole node
