@@ -127,12 +127,16 @@ The goal is to establish a **trustworthy core**, not a feature-rich platform.
 
 ---
 
-### v0.4 — Minimal CLI (in progress)
-- `forkline diff --first` ✅
-- `forkline run`
-- `forkline replay`
-- Human-readable text output and JSON output ✅
-- Scriptable exit codes ✅
+### v0.4 — CLI ✅
+- `forkline run <script> [-- args...]` — execute under tracing, record metadata, print run_id
+- `forkline list [--limit N] [--json]` — list runs newest-first (table or JSON)
+- `forkline replay <run_id> [--json]` — load run and print summary (events, duration, status)
+- `forkline diff <run_a> <run_b> [--format pretty|json]` — event-level first-divergence diff
+- Human-readable text output and JSON output
+- Scriptable exit codes (0 = success, 1 = diff found, 2 = missing run / bad input)
+- `--db` flag on every subcommand for custom database path
+- `FORKLINE_TRACING`, `FORKLINE_RUN_ID`, `FORKLINE_DB` env vars for script integration
+- Ollama Qwen3 example demonstrating nondeterminism detection (`examples/ollama_qwen3.py`)
 
 ---
 
