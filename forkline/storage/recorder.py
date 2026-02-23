@@ -21,7 +21,11 @@ from forkline.artifact.migrate import migrate_artifact
 from forkline.artifact.schema import (
     RunArtifact,
 )
-from forkline.core.redaction import RedactionPolicy, create_default_policy
+from forkline.core.redaction import (
+    RedactionPolicy,
+    create_default_policy,
+    load_redaction_config,
+)
 from forkline.version import (
     DEFAULT_FORKLINE_VERSION,
     DEFAULT_SCHEMA_VERSION,
@@ -205,6 +209,75 @@ class RunRecorder:
             event_id = cursor.lastrowid
 
         return event_id
+
+    @classmethod
+    def with_config(
+        cls,
+        db_path: str = "runs.db",
+        redact_config_path: Optional[str] = None,
+    ) -> "RunRecorder":
+        """
+        Create a RunRecorder with redaction policy loaded from a config file.
+
+        If no config path is provided, uses the default SAFE policy.
+
+        Args:
+            db_path: Path to SQLite database
+            redact_config_path: Path to redaction config file (YAML or JSON)
+        """
+        policy = None
+        if redact_config_path is not None:
+            config = load_redaction_config(redact_config_path)
+            policy = config.to_policy()
+        return cls(db_path=db_path, redaction_policy=policy)
+
+    def log_tool_call(
+        self,
+        run_id: str,
+        tool_name: str,
+        request: Dict[str, Any],
+        response: Optional[Dict[str, Any]] = None,
+        error: Optional[Dict[str, Any]] = None,
+        timing: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        invocation_id: Optional[str] = None,
+    ) -> int:
+        """
+        Log a tool call event with the canonical payload structure.
+
+        Convenience method that constructs a properly-structured tool_call
+        event payload and logs it. Redaction is applied at the storage boundary.
+
+        Args:
+            run_id: Run identifier
+            tool_name: Tool name (e.g., "bigquery.query", "http.request")
+            request: Request payload (will be redacted)
+            response: Response payload (will be redacted), or None
+            error: Error payload (will be redacted), or None
+            timing: Timing dict with started_at, ended_at, duration_ms
+            metadata: Optional metadata (status_code, row_count, etc.)
+            invocation_id: Stable invocation ID (auto-generated if not provided)
+
+        Returns:
+            event_id
+        """
+        if invocation_id is None:
+            invocation_id = uuid.uuid4().hex
+
+        payload: Dict[str, Any] = {
+            "tool_name": tool_name,
+            "invocation_id": invocation_id,
+            "request": request,
+            "timing": timing or {},
+        }
+        if response is not None:
+            payload["response"] = response
+        if error is not None:
+            payload["error"] = error
+        if metadata:
+            payload["metadata"] = metadata
+
+        return self.log_event(run_id, "tool_call", payload)
 
     def end_run(self, run_id: str, status: str = "success") -> None:
         """

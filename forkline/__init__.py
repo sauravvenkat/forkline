@@ -7,10 +7,16 @@ from .core import (
     FirstDivergenceResult,
     # Redaction
     RedactionAction,
+    RedactionConfig,
     RedactionRule,
+    RegexRedactionRule,
     Run,
     Step,
     StepSummary,
+    # Tool call instrumentation
+    ToolCallPayload,
+    ToolCallRecorder,
+    ToolCallTiming,
     # Canonicalization
     canon,
     create_default_policy,
@@ -18,6 +24,8 @@ from .core import (
     diff_runs,
     find_first_divergence,
     json_diff,
+    load_redaction_config,
+    record_tool_call,
     sha256_hex,
 )
 from .core.redaction import RedactionPolicy
@@ -93,9 +101,17 @@ __all__ = [
     "DivergenceType",
     # Redaction
     "RedactionAction",
+    "RedactionConfig",
     "RedactionPolicy",
     "RedactionRule",
+    "RegexRedactionRule",
     "create_default_policy",
+    "load_redaction_config",
+    # Tool call instrumentation
+    "ToolCallPayload",
+    "ToolCallRecorder",
+    "ToolCallTiming",
+    "record_tool_call",
     # Replay exceptions
     "ReplayError",
     "MissingArtifactError",
