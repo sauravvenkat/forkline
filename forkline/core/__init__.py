@@ -11,9 +11,12 @@ from .first_divergence import (
 from .json_diff import json_diff
 from .redaction import (
     RedactionAction,
+    RedactionConfig,
     RedactionPolicy,
     RedactionRule,
+    RegexRedactionRule,
     create_default_policy,
+    load_redaction_config,
 )
 from .replay import (
     # Exceptions
@@ -45,6 +48,12 @@ from .replay import (
     replay,
     replay_mode,
 )
+from .tool_call import (
+    ToolCallPayload,
+    ToolCallRecorder,
+    ToolCallTiming,
+    record_tool_call,
+)
 from .types import Event, Run, Step
 
 __all__ = [
@@ -66,9 +75,17 @@ __all__ = [
     "json_diff",
     # Redaction
     "RedactionAction",
+    "RedactionConfig",
     "RedactionPolicy",
     "RedactionRule",
+    "RegexRedactionRule",
     "create_default_policy",
+    "load_redaction_config",
+    # Tool call instrumentation
+    "ToolCallPayload",
+    "ToolCallRecorder",
+    "ToolCallTiming",
+    "record_tool_call",
     # Replay exceptions
     "ReplayError",
     "MissingArtifactError",

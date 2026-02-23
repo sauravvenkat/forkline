@@ -31,6 +31,11 @@ from .render import (
 
 
 def _get_recorder(args: argparse.Namespace) -> RunRecorder:
+    redact_config = getattr(args, "redact_config", None)
+    if redact_config:
+        return RunRecorder.with_config(
+            db_path=args.db, redact_config_path=redact_config
+        )
     return RunRecorder(db_path=args.db)
 
 
@@ -93,6 +98,8 @@ def _cmd_run(args: argparse.Namespace) -> None:
     env["FORKLINE_TRACING"] = "1"
     env["FORKLINE_RUN_ID"] = run_id
     env["FORKLINE_DB"] = args.db
+    if getattr(args, "redact_config", None):
+        env["FORKLINE_REDACT_CONFIG"] = args.redact_config
 
     try:
         result = subprocess.run(
@@ -203,6 +210,11 @@ def main(argv: list[str] | None = None) -> None:
         "script_args",
         nargs=argparse.REMAINDER,
         help="Arguments to pass to the script (use -- to separate)",
+    )
+    run_parser.add_argument(
+        "--redact-config",
+        default=None,
+        help="Path to redaction config file (YAML or JSON)",
     )
     run_parser.set_defaults(func=_cmd_run)
 
