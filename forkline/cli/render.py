@@ -66,6 +66,7 @@ def render_list_json(runs: List[Dict[str, Any]]) -> str:
     for run in runs:
         clean.append(
             {
+                "schema_version": run.get("schema_version", "1.0"),
                 "run_id": run.get("run_id"),
                 "created_at": run.get("started_at"),
                 "entrypoint": run.get("entrypoint"),
@@ -115,11 +116,13 @@ def render_replay_summary(run: Dict[str, Any], events: List[Dict[str, Any]]) -> 
 
 def render_replay_json(run: Dict[str, Any], events: List[Dict[str, Any]]) -> str:
     result = {
+        "schema_version": run.get("schema_version", "1.0"),
         "run_id": run["run_id"],
         "entrypoint": run.get("entrypoint"),
         "status": run.get("status"),
         "started_at": run.get("started_at"),
         "ended_at": run.get("ended_at"),
+        "forkline_version": run.get("forkline_version"),
         "total_events": len(events),
         "events": events,
     }

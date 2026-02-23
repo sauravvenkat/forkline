@@ -5,8 +5,10 @@ import os
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Iterable, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
+from ..artifact.migrate import migrate_artifact
+from ..artifact.schema import RunArtifact
 from ..core.types import Event, Run, Step
 from ..version import (
     DEFAULT_FORKLINE_VERSION,
@@ -267,3 +269,58 @@ class SQLiteStore:
                 created_at=row["created_at"],
                 payload=json.loads(row["payload_json"]),
             )
+
+    def load_artifact(self, run_id: str) -> Optional[RunArtifact]:
+        """
+        Load a run as a canonical RunArtifact, applying migrations if needed.
+
+        Flattens the step-based event hierarchy into a flat event list
+        for the canonical artifact schema.
+
+        Returns:
+            RunArtifact if found, None if run does not exist.
+
+        Raises:
+            SchemaVersionError: If the artifact cannot be migrated.
+        """
+        run = self.load_run(run_id)
+        if run is None:
+            return None
+
+        flat_events: List[Dict[str, Any]] = []
+        for step in run.steps:
+            for event in step.events:
+                flat_events.append(
+                    {
+                        "event_id": event.event_id or 0,
+                        "run_id": event.run_id,
+                        "ts": event.created_at,
+                        "type": event.type,
+                        "payload": event.payload,
+                    }
+                )
+
+        raw: Dict[str, Any] = {
+            "schema_version": run.schema_version or DEFAULT_SCHEMA_VERSION,
+            "run_id": run.run_id,
+            "entrypoint": "",
+            "started_at": run.created_at,
+            "forkline_version": run.forkline_version,
+            "events": flat_events,
+        }
+
+        migrated = migrate_artifact(raw)
+
+        return RunArtifact.from_dict(migrated)
+
+    def export_artifact_json(self, run_id: str, indent: int = 2) -> Optional[str]:
+        """
+        Export a run as a canonical JSON artifact string.
+
+        Returns:
+            JSON string if run exists, None otherwise.
+        """
+        artifact = self.load_artifact(run_id)
+        if artifact is None:
+            return None
+        return artifact.to_json(indent=indent)

@@ -21,7 +21,9 @@ Design Philosophy:
 from __future__ import annotations
 
 import contextvars
+import logging
 import uuid
+import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
@@ -37,7 +39,10 @@ from typing import (
 )
 
 from ..storage.store import SQLiteStore
+from ..version import DEFAULT_SCHEMA_VERSION, SCHEMA_VERSION
 from .types import Event, Run, Step
+
+logger = logging.getLogger("forkline.replay")
 
 # =============================================================================
 # Replay Mode Context (Determinism Guardrails)
@@ -771,15 +776,54 @@ def compare_steps(
 # =============================================================================
 
 
+def _check_schema_version(run: Run) -> None:
+    """
+    Validate schema_version on a loaded run.
+
+    Behavior:
+    - If schema_version is None/missing: logs a warning (artifact predates versioning).
+    - If schema_version is newer than current: logs a warning (best-effort).
+    - If schema_version is current or older known: no action.
+
+    This never raises — replay proceeds with best-effort for all cases.
+    The invariant is: replay should degrade gracefully, never crash
+    due to version mismatches.
+    """
+    version = run.schema_version
+
+    if version is None:
+        warnings.warn(
+            f"Run '{run.run_id}' has no schema_version. "
+            f"This artifact may predate schema versioning. "
+            f"Loading with default assumptions (schema '{DEFAULT_SCHEMA_VERSION}').",
+            UserWarning,
+            stacklevel=3,
+        )
+        return
+
+    from ..artifact.migrate import _compare_versions
+
+    cmp = _compare_versions(version, SCHEMA_VERSION)
+    if cmp > 0:
+        warnings.warn(
+            f"Run '{run.run_id}' has schema_version '{version}' which is "
+            f"newer than the current version '{SCHEMA_VERSION}'. "
+            f"Attempting best-effort replay. Upgrade Forkline for full support.",
+            UserWarning,
+            stacklevel=3,
+        )
+
+
 class ReplayEngine:
     """
     Deterministic replay engine for Forkline runs.
 
     This engine:
     1. Loads recorded runs from local storage
-    2. Compares runs step-by-step for divergence
-    3. Halts at first divergence
-    4. Returns structured ReplayResult with exact divergence location
+    2. Validates schema_version for compatibility
+    3. Compares runs step-by-step for divergence
+    4. Halts at first divergence
+    5. Returns structured ReplayResult with exact divergence location
 
     The engine is read-only: it never mutates stored artifacts.
     All comparisons are deterministic and reproducible.
@@ -802,9 +846,11 @@ class ReplayEngine:
 
     def load_run(self, run_id: str) -> Optional[Run]:
         """
-        Load a run from storage.
+        Load a run from storage with schema version validation.
 
-        This is a thin wrapper around store.load_run for consistency.
+        Checks schema_version and warns if the artifact predates versioning
+        or is from a newer schema. Never raises due to version issues —
+        replay proceeds with best-effort.
 
         Args:
             run_id: The run identifier
@@ -812,7 +858,10 @@ class ReplayEngine:
         Returns:
             Run object if found, None otherwise
         """
-        return self.store.load_run(run_id)
+        run = self.store.load_run(run_id)
+        if run is not None:
+            _check_schema_version(run)
+        return run
 
     def compare_runs(
         self,
