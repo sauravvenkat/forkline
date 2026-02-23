@@ -196,6 +196,16 @@ See [`QUICKSTART_RECORDING_V0.md`](docs/QUICKSTART_RECORDING_V0.md) for recordin
 
 ---
 
+## Artifact Stability Guarantee
+
+Forkline guarantees replay compatibility across minor versions. Breaking changes require a major version increment and migration support.
+
+Every run artifact includes a mandatory `schema_version` field. Older artifacts are automatically migrated to the current schema via a deterministic, side-effect-free migration pipeline. Unknown fields are always ignored, never rejected — ensuring forward compatibility with newer artifact versions.
+
+For the full artifact schema specification, see [`docs/artifact_schema.md`](docs/artifact_schema.md).
+
+---
+
 ## Design principles
 
 Forkline is intentionally opinionated.

@@ -42,10 +42,14 @@ class TestVersionConstants(unittest.TestCase):
             self.assertTrue(part.isdigit())
 
     def test_schema_version_format(self):
-        """Schema version should be a descriptive string."""
-        # SCHEMA_VERSION should be like "recording_v0"
-        self.assertTrue(SCHEMA_VERSION.startswith("recording_"))
-        self.assertIn("v", SCHEMA_VERSION)
+        """Schema version should be a valid semver-like string or legacy format."""
+        # SCHEMA_VERSION is now "1.0" (or "major.minor" format)
+        parts = SCHEMA_VERSION.split(".")
+        self.assertGreaterEqual(len(parts), 2)
+        for part in parts:
+            self.assertTrue(
+                part.isdigit(), f"Schema version part '{part}' is not numeric"
+            )
 
     def test_default_versions_are_reasonable(self):
         """Default versions for backward compat should be sensible."""
@@ -53,8 +57,10 @@ class TestVersionConstants(unittest.TestCase):
         self.assertTrue(
             DEFAULT_FORKLINE_VERSION == "0.1.0" or DEFAULT_FORKLINE_VERSION == "unknown"
         )
-        # Default schema should match current (recording format hasn't changed)
+        # Default schema is "recording_v0" for artifacts predating version tracking
         self.assertEqual(DEFAULT_SCHEMA_VERSION, "recording_v0")
+        # Current schema should be "1.0" or newer
+        self.assertNotEqual(SCHEMA_VERSION, DEFAULT_SCHEMA_VERSION)
 
 
 class TestSQLiteStoreVersioning(unittest.TestCase):

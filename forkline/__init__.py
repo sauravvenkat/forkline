@@ -1,3 +1,4 @@
+from .artifact import ArtifactEvent, RunArtifact, SchemaVersionError, migrate_artifact
 from .core import (
     # First-divergence diffing
     DivergenceType,
@@ -66,6 +67,11 @@ __all__ = [
     "SCHEMA_VERSION",
     "DEFAULT_FORKLINE_VERSION",
     "DEFAULT_SCHEMA_VERSION",
+    # Artifact schema
+    "RunArtifact",
+    "ArtifactEvent",
+    "SchemaVersionError",
+    "migrate_artifact",
     # Core types
     "Event",
     "Run",

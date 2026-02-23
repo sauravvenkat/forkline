@@ -1,7 +1,8 @@
 """
-Deterministic run recording v0.
+Deterministic run recording.
 
 Local-first, append-only, boring infrastructure for recording execution runs.
+All new artifacts are written with schema_version "1.0".
 """
 
 from __future__ import annotations
@@ -16,6 +17,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from forkline.artifact.migrate import migrate_artifact
+from forkline.artifact.schema import (
+    RunArtifact,
+)
 from forkline.core.redaction import RedactionPolicy, create_default_policy
 from forkline.version import (
     DEFAULT_FORKLINE_VERSION,
@@ -308,3 +313,60 @@ class RunRecorder:
                 events.append(event)
 
             return events
+
+    def load_artifact(self, run_id: str) -> Optional[RunArtifact]:
+        """
+        Load a run as a canonical RunArtifact, applying migrations if needed.
+
+        This is the preferred way to load artifacts for replay or export.
+        It handles:
+        - Missing schema_version (older artifacts without versioning)
+        - Older schema versions (applies deterministic migration)
+        - Newer schema versions (best-effort parse with warning)
+
+        Returns:
+            RunArtifact if found, None if run does not exist.
+
+        Raises:
+            SchemaVersionError: If the artifact cannot be migrated.
+        """
+        run = self.get_run(run_id)
+        if run is None:
+            return None
+
+        events = self.get_events(run_id)
+
+        raw: Dict[str, Any] = {
+            "schema_version": run.get("schema_version"),
+            "run_id": run["run_id"],
+            "entrypoint": run.get("entrypoint", ""),
+            "started_at": run.get("started_at", ""),
+            "ended_at": run.get("ended_at"),
+            "status": run.get("status"),
+            "forkline_version": run.get("forkline_version"),
+            "events": events,
+            "metadata": {},
+        }
+
+        for env_field in ("python_version", "platform", "cwd"):
+            if env_field in run and run[env_field] is not None:
+                raw["metadata"][env_field] = run[env_field]
+
+        migrated = migrate_artifact(raw)
+
+        return RunArtifact.from_dict(migrated)
+
+    def export_artifact_json(self, run_id: str, indent: int = 2) -> Optional[str]:
+        """
+        Export a run as a canonical JSON artifact string.
+
+        The exported JSON always includes schema_version and conforms
+        to the current canonical schema.
+
+        Returns:
+            JSON string if run exists, None otherwise.
+        """
+        artifact = self.load_artifact(run_id)
+        if artifact is None:
+            return None
+        return artifact.to_json(indent=indent)
