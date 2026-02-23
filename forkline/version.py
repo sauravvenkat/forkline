@@ -7,7 +7,7 @@ backward-compatible loading of older artifacts.
 """
 
 # Library version (matches pyproject.toml)
-FORKLINE_VERSION = "0.3.0"
+FORKLINE_VERSION = "0.4.0"
 
 # Schema version for recording artifacts
 # Increment when the artifact format changes in a breaking way

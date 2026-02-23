@@ -10,6 +10,10 @@ Its purpose is simple and strict:
 
 Forkline treats nondeterminism as something to be **controlled**, not merely observed.
 
+<p align="center">
+  <a href="docs/assets/demo.html"><strong>▶ Watch the interactive CLI demo</strong></a>
+</p>
+
 ---
 
 ## Why Forkline exists
