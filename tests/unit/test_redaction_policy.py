@@ -10,6 +10,7 @@ These tests verify security-critical redaction behavior:
 
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from forkline.core.redaction import (
     RedactionAction,
@@ -470,6 +471,39 @@ class TestRecorderIntegration(unittest.TestCase):
                 events[0]["payload"]["args"]["url"], "https://api.example.com"
             )
             self.assertEqual(events[0]["payload"]["result"]["data"], "response")
+
+    def test_recorder_applies_datafog_when_enabled(self):
+        """RunRecorder should apply string-only DataFog redaction when enabled."""
+
+        def fake_datafog_redactor(value: str) -> str:
+            return value.replace("alice@example.com", "***@example.com")
+
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch(
+                "forkline.storage.recorder._build_datafog_redactor_function",
+                return_value=fake_datafog_redactor,
+            ),
+        ):
+            db_path = f"{tmpdir}/test.db"
+            recorder = RunRecorder(db_path=db_path, enable_datafog=True)
+
+            run_id = recorder.start_run(entrypoint="test.py")
+            payload = {
+                "api_key": "secret123",
+                "user_prompt": "alice@example.com is my email",
+            }
+
+            recorder.log_event(run_id, "tool_call", payload=payload)
+            recorder.log_event(run_id, "tool_call", payload=payload)
+
+            events = recorder.get_events(run_id)
+            self.assertEqual(len(events), 2)
+            self.assertEqual(events[0]["payload"]["api_key"], "[REDACTED]")
+            self.assertEqual(
+                events[0]["payload"]["user_prompt"], "***@example.com is my email"
+            )
+            self.assertEqual(events[0]["payload"], events[1]["payload"])
 
     def test_recorder_with_custom_policy(self):
         """RunRecorder should accept custom redaction policy."""

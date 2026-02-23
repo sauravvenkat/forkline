@@ -12,11 +12,16 @@ import platform
 import sqlite3
 import sys
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from forkline.core.redaction import RedactionPolicy, create_default_policy
+from forkline.storage.datafog_adapter import (
+    DataFogConfigurationError,
+    _build_datafog_redactor_function,
+    apply_datafog_redaction,
+)
 from forkline.version import (
     DEFAULT_FORKLINE_VERSION,
     DEFAULT_SCHEMA_VERSION,
@@ -38,6 +43,10 @@ class RunRecorder:
 
     db_path: str = "runs.db"
     redaction_policy: Optional[RedactionPolicy] = None
+    enable_datafog: bool = False
+    datafog_mode: str = "redact"
+    datafog_entity_types: Optional[list[str]] = None
+    _datafog_redactor: Optional[Callable[[str], str]] = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         # Match SQLiteStore behavior: ensure parent directory exists.
@@ -48,6 +57,13 @@ class RunRecorder:
         # Use default SAFE mode policy if none provided
         if self.redaction_policy is None:
             self.redaction_policy = create_default_policy()
+
+        # DataFog is intentionally lazy and optional.
+        if self.enable_datafog:
+            self._datafog_redactor = _build_datafog_redactor_function(
+                mode=self.datafog_mode,
+                entity_types=self.datafog_entity_types,
+            )
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
@@ -186,6 +202,18 @@ class RunRecorder:
         # Apply redaction at storage boundary
         # This is security-critical: storage never sees raw payloads
         redacted_payload = self.redaction_policy.redact(event_type, payload)
+
+        # Optional semantic redaction layer for plain-text fields.
+        # Keeps current policy semantics untouched and only applies on string leaves.
+        if self.enable_datafog:
+            if self._datafog_redactor is None:
+                raise DataFogConfigurationError(
+                    "RunRecorder datafog mode is enabled but no DataFog redactor "
+                    "was initialized."
+                )
+            redacted_payload = apply_datafog_redaction(
+                redacted_payload, self._datafog_redactor
+            )
 
         payload_json = json.dumps(redacted_payload, sort_keys=True)
 
