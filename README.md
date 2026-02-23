@@ -11,7 +11,7 @@ Its purpose is simple and strict:
 Forkline treats nondeterminism as something to be **controlled**, not merely observed.
 
 <p align="center">
-  <a href="docs/assets/demo.html"><strong>▶ Watch the interactive CLI demo</strong></a>
+  <img src="docs/assets/demo.svg" alt="Forkline CLI demo" width="820"/>
 </p>
 
 ---
