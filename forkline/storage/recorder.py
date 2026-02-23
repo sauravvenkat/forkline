@@ -221,6 +221,37 @@ class RunRecorder:
                 (ended_at, status, run_id),
             )
 
+    def list_runs(self, limit: Optional[int] = None) -> list[Dict[str, Any]]:
+        """
+        List all runs, newest first.
+
+        Args:
+            limit: Maximum number of runs to return (None = all)
+
+        Returns:
+            List of run metadata dicts
+        """
+        with self._connect() as conn:
+            query = """
+                SELECT run_id, schema_version, forkline_version, entrypoint,
+                       started_at, ended_at, status, python_version, platform, cwd
+                FROM runs
+                ORDER BY started_at DESC
+            """
+            if limit is not None and limit > 0:
+                query += f" LIMIT {int(limit)}"
+            rows = conn.execute(query).fetchall()
+
+        results: list[Dict[str, Any]] = []
+        for row in rows:
+            result = dict(row)
+            if result.get("schema_version") is None:
+                result["schema_version"] = DEFAULT_SCHEMA_VERSION
+            if result.get("forkline_version") is None:
+                result["forkline_version"] = DEFAULT_FORKLINE_VERSION
+            results.append(result)
+        return results
+
     def get_run(self, run_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve a run by ID.

@@ -75,18 +75,110 @@ See [`docs/REPLAY_ENGINE_V0.md`](docs/REPLAY_ENGINE_V0.md) for full replay docum
 ## Quick Start
 
 ```bash
-# Clone and setup
-cd forkline
-source dev.env
+# Install (editable)
+pip install -e .
 
-# Run the example
-python examples/minimal.py
+# Run a script under forkline tracing
+forkline run examples/minimal.py
 
-# Inspect the recorded run
-python scripts/inspect_runs.py
+# List recorded runs
+forkline list
+
+# Replay a run (prints summary)
+forkline replay <run_id>
+
+# Diff two runs
+forkline diff <run_id_a> <run_id_b>
 ```
 
-### Compare runs
+### CLI Reference
+
+```bash
+# Run a script and capture metadata (timestamps, exit code, script path)
+forkline run examples/minimal.py
+# => run_id: 8a3f...
+
+# Pass arguments to the script (use -- to separate)
+forkline run examples/minimal.py -- --verbose --count 5
+
+# List runs (newest first, table format)
+forkline list
+forkline list --limit 10
+forkline list --json
+
+# Replay a run (load and summarize events)
+forkline replay <run_id>
+forkline replay <run_id> --json
+
+# Diff two runs (finds first divergence)
+forkline diff <run_id_a> <run_id_b>
+forkline diff <run_id_a> <run_id_b> --format json
+
+# Use a custom database path
+forkline run --db myproject.db examples/minimal.py
+forkline list --db myproject.db
+```
+
+### Example: catching LLM nondeterminism with Ollama Qwen3
+
+`examples/ollama_qwen3.py` calls Ollama's Qwen3 model and records the
+input/output as forkline events. Run it twice — the LLM gives a different
+response each time, and `forkline diff` catches it.
+
+```bash
+# Prerequisites: ollama pull qwen3
+
+$ forkline run examples/ollama_qwen3.py
+Calling qwen3 ...
+Response: A fork bomb is a denial-of-service attack that recursively spawns
+an infinite number of processes to exhaust system resources, causing a crash
+or severe performance degradation.
+run_id: b015f49f45c04002a3c489fe84b45c5c
+
+$ forkline run examples/ollama_qwen3.py
+Calling qwen3 ...
+Response: A fork bomb is a type of denial-of-service attack that recursively
+spawns an infinite number of processes using the fork() system call, thereby
+exhausting system resources and causing the system to crash or become
+unresponsive.
+run_id: 7b08ac5e533d456daa7a24921c0d1687
+```
+
+**`forkline list`** — both runs, newest first:
+
+```
+ID                                    Created               Script                          Status
+------------------------------------------------------------------------------------------------------
+7b08ac5e533d456daa7a24921c0d1687      2026-02-23 01:04:34   examples/ollama_qwen3.py        ok
+b015f49f45c04002a3c489fe84b45c5c      2026-02-23 01:04:20   examples/ollama_qwen3.py        ok
+```
+
+**`forkline replay b015f4...`** — summary of the first run:
+
+```
+Run: b015f49f45c04002a3c489fe84b45c5c
+Script: examples/ollama_qwen3.py
+Status: ok
+Duration: 10.74s
+Total events: 2
+Events by type:
+  input: 1
+  output: 1
+```
+
+**`forkline diff b015f4... 7b08ac...`** — nondeterminism caught:
+
+```
+Step 1 diverged:
+  old.type: output
+  old.payload: {"model": "qwen3", "response": "A fork bomb is a denial-of-service attack tha...
+  new.type: output
+  new.payload: {"model": "qwen3", "response": "A fork bomb is a type of denial-of-service at...
+```
+
+Same prompt, same model — different output. That's exactly the problem Forkline exists to surface.
+
+### Programmatic API
 
 ```python
 from forkline import ReplayEngine, SQLiteStore, ReplayStatus
@@ -232,17 +324,14 @@ Forkline can compare two recorded runs and identify the **first point of diverge
 ### CLI Usage
 
 ```bash
-# Text output (default)
-forkline diff --first run_a_id run_b_id
+# Pretty diff (default)
+forkline diff run_a_id run_b_id
 
-# JSON output
-forkline diff --first run_a_id run_b_id --format json
+# JSON diff
+forkline diff run_a_id run_b_id --format json
 
-# Custom database path and resync window
-forkline diff --first run_a_id run_b_id --db runs.db --window 20
-
-# Show only output diffs
-forkline diff --first run_a_id run_b_id --show output
+# Custom database path
+forkline diff run_a_id run_b_id --db myproject.db
 ```
 
 ### Programmatic Usage
@@ -337,7 +426,7 @@ The v0 series focuses on **correctness and determinism**, not polish.
 1. ✅ Deterministic run recording  
 2. ✅ Offline replay engine  
 3. ✅ First-divergence diffing  
-4. Minimal CLI (`run`, `replay`, `diff`)  
+4. ✅ CLI (`run`, `list`, `replay`, `diff`)  
 5. CI-friendly deterministic mode  
 
 The canonical roadmap and design contract live here:

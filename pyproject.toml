@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "forkline"
-version = "0.3.0"
+version = "0.4.0"
 description = "Replay-first tracing + deterministic replay + diffing for agentic workflows."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,7 +17,7 @@ authors = [
 forkline = "forkline.cli:main"
 
 [tool.setuptools]
-packages = ["forkline", "forkline.core", "forkline.storage", "forkline.tracer"]
+packages = ["forkline", "forkline.cli", "forkline.core", "forkline.storage", "forkline.tracer"]
 
 [tool.black]
 line-length = 88
