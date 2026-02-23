@@ -86,7 +86,9 @@ def _invoke_datafog_function(
     )
 
 
-def _build_datafog_redactor_function(mode: str, entity_types: Optional[list[str]]) -> Callable[[str], str]:
+def _build_datafog_redactor_function(
+    mode: str, entity_types: Optional[list[str]]
+) -> Callable[[str], str]:
     """Build a callable that redacts a text input with DataFog."""
     try:
         import datafog  # type: ignore
@@ -131,7 +133,8 @@ def _build_datafog_redactor_function(mode: str, entity_types: Optional[list[str]
 
     if not candidates:
         raise DataFogConfigurationError(
-            "No usable DataFog redaction API was found (sanitize/scan_text/anonymize_text/process)."
+            "No usable DataFog redaction API was found "
+            "(sanitize/scan_text/anonymize_text/process)."
         )
 
     candidate_signature_seen = set()

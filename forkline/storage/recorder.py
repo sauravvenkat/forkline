@@ -19,8 +19,8 @@ from typing import Any, Callable, Dict, Optional
 from forkline.core.redaction import RedactionPolicy, create_default_policy
 from forkline.storage.datafog_adapter import (
     DataFogConfigurationError,
-    apply_datafog_redaction,
     _build_datafog_redactor_function,
+    apply_datafog_redaction,
 )
 from forkline.version import (
     DEFAULT_FORKLINE_VERSION,

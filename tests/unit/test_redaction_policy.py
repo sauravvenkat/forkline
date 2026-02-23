@@ -478,9 +478,12 @@ class TestRecorderIntegration(unittest.TestCase):
         def fake_datafog_redactor(value: str) -> str:
             return value.replace("alice@example.com", "***@example.com")
 
-        with tempfile.TemporaryDirectory() as tmpdir, patch(
-            "forkline.storage.recorder._build_datafog_redactor_function",
-            return_value=fake_datafog_redactor,
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch(
+                "forkline.storage.recorder._build_datafog_redactor_function",
+                return_value=fake_datafog_redactor,
+            ),
         ):
             db_path = f"{tmpdir}/test.db"
             recorder = RunRecorder(db_path=db_path, enable_datafog=True)
