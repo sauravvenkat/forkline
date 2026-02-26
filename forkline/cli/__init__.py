@@ -8,6 +8,11 @@ Usage::
     forkline list [--limit N] [--json]
     forkline replay <run_id> [--json]
     forkline diff <run_id_a> <run_id_b> [--format pretty|json] [--first-divergence]
+    forkline ci record --entrypoint <script> --out <path>
+    forkline ci replay --artifact <path> [--strict]
+    forkline ci diff --expected <path> --actual <path> [--format json|text]
+    forkline ci check --expected <path> --entrypoint <script>
+    forkline ci normalize <artifact> [--out <path>]
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List
 
+from ..ci.commands import ci_check, ci_diff, ci_normalize, ci_record, ci_replay
 from ..storage.recorder import RunRecorder
 from .render import (
     render_diff_json,
@@ -176,6 +182,67 @@ def _cmd_diff(args: argparse.Namespace) -> None:
 
 
 # ---------------------------------------------------------------------------
+# CI Subcommands
+# ---------------------------------------------------------------------------
+
+
+def _cmd_ci_record(args: argparse.Namespace) -> None:
+    script_args: list[str] = getattr(args, "script_args", None) or []
+    if script_args and script_args[0] == "--":
+        script_args = script_args[1:]
+    offline = getattr(args, "offline", False) or os.environ.get("FORKLINE_OFFLINE") == "1"
+    code = ci_record(
+        args.entrypoint,
+        args.out,
+        offline=offline,
+        script_args=script_args,
+    )
+    sys.exit(code)
+
+
+def _cmd_ci_replay(args: argparse.Namespace) -> None:
+    code = ci_replay(
+        args.artifact,
+        strict=getattr(args, "strict", False),
+    )
+    sys.exit(code)
+
+
+def _cmd_ci_diff(args: argparse.Namespace) -> None:
+    code = ci_diff(
+        args.expected,
+        args.actual,
+        output_format=getattr(args, "format", "text"),
+        fail_on=getattr(args, "fail_on", "any"),
+    )
+    sys.exit(code)
+
+
+def _cmd_ci_check(args: argparse.Namespace) -> None:
+    script_args: list[str] = getattr(args, "script_args", None) or []
+    if script_args and script_args[0] == "--":
+        script_args = script_args[1:]
+    offline = getattr(args, "offline", True) or os.environ.get("FORKLINE_OFFLINE") == "1"
+    code = ci_check(
+        args.entrypoint,
+        args.expected,
+        offline=offline,
+        output_format=getattr(args, "format", "text"),
+        fail_on=getattr(args, "fail_on", "any"),
+        script_args=script_args,
+    )
+    sys.exit(code)
+
+
+def _cmd_ci_normalize(args: argparse.Namespace) -> None:
+    code = ci_normalize(
+        args.artifact,
+        out_path=getattr(args, "out", None),
+    )
+    sys.exit(code)
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -283,6 +350,144 @@ def main(argv: list[str] | None = None) -> None:
         help="Stop at first divergence (default behavior)",
     )
     diff_parser.set_defaults(func=_cmd_diff)
+
+    # --- ci ---
+    ci_parser = subparsers.add_parser(
+        "ci",
+        help="CI integration commands",
+        description=(
+            "Commands for CI/CD pipelines: record baselines, replay artifacts, "
+            "diff for behavioral changes, and gate merges on behavioral identity."
+        ),
+    )
+    ci_subparsers = ci_parser.add_subparsers(dest="ci_command", help="CI subcommands")
+
+    # --- ci record ---
+    ci_record_parser = ci_subparsers.add_parser(
+        "record",
+        help="Record a baseline artifact for CI",
+        description="Run an entrypoint and produce a normalized, committable artifact.",
+    )
+    ci_record_parser.add_argument(
+        "--entrypoint", required=True, help="Path to Python script to execute"
+    )
+    ci_record_parser.add_argument(
+        "--out", required=True, help="Output path for the artifact JSON file"
+    )
+    ci_record_parser.add_argument(
+        "--offline",
+        action="store_true",
+        default=False,
+        help="Block all network access during recording",
+    )
+    ci_record_parser.add_argument(
+        "script_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass to the script (use -- to separate)",
+    )
+    ci_record_parser.set_defaults(func=_cmd_ci_record)
+
+    # --- ci replay ---
+    ci_replay_parser = ci_subparsers.add_parser(
+        "replay",
+        help="Validate a recorded artifact offline",
+        description="Load and validate an artifact file without network access.",
+    )
+    ci_replay_parser.add_argument(
+        "--artifact", required=True, help="Path to artifact JSON file"
+    )
+    ci_replay_parser.add_argument(
+        "--strict",
+        action="store_true",
+        default=False,
+        help="Enable strict validation (all events must have payloads)",
+    )
+    ci_replay_parser.set_defaults(func=_cmd_ci_replay)
+
+    # --- ci diff ---
+    ci_diff_parser = ci_subparsers.add_parser(
+        "diff",
+        help="Diff two artifact files",
+        description="Compare expected vs actual artifacts and fail on divergence.",
+    )
+    ci_diff_parser.add_argument(
+        "--expected", required=True, help="Path to expected (baseline) artifact"
+    )
+    ci_diff_parser.add_argument(
+        "--actual", required=True, help="Path to actual (new) artifact"
+    )
+    ci_diff_parser.add_argument(
+        "--format",
+        choices=["json", "text"],
+        default="text",
+        help="Output format (default: text)",
+    )
+    ci_diff_parser.add_argument(
+        "--fail-on",
+        choices=["any", "first-divergence", "semantic"],
+        default="any",
+        help="Diff policy (default: any)",
+    )
+    ci_diff_parser.set_defaults(func=_cmd_ci_diff)
+
+    # --- ci check ---
+    ci_check_parser = ci_subparsers.add_parser(
+        "check",
+        help="Record actual, diff against expected baseline",
+        description=(
+            "Run an entrypoint, record the result, and diff against an expected "
+            "artifact. Exits 1 if behavior changed."
+        ),
+    )
+    ci_check_parser.add_argument(
+        "--entrypoint", required=True, help="Path to Python script to execute"
+    )
+    ci_check_parser.add_argument(
+        "--expected", required=True, help="Path to expected (baseline) artifact"
+    )
+    ci_check_parser.add_argument(
+        "--offline",
+        action="store_true",
+        default=True,
+        help="Block all network access (default: on)",
+    )
+    ci_check_parser.add_argument(
+        "--format",
+        choices=["json", "text"],
+        default="text",
+        help="Output format (default: text)",
+    )
+    ci_check_parser.add_argument(
+        "--fail-on",
+        choices=["any", "first-divergence", "semantic"],
+        default="any",
+        help="Diff policy (default: any)",
+    )
+    ci_check_parser.add_argument(
+        "script_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass to the script (use -- to separate)",
+    )
+    ci_check_parser.set_defaults(func=_cmd_ci_check)
+
+    # --- ci normalize ---
+    ci_normalize_parser = ci_subparsers.add_parser(
+        "normalize",
+        help="Normalize an artifact file for stable diffs",
+        description="Strip timestamps, platform metadata, and sort events.",
+    )
+    ci_normalize_parser.add_argument(
+        "artifact", help="Path to artifact JSON file to normalize"
+    )
+    ci_normalize_parser.add_argument(
+        "--out",
+        default=None,
+        help="Output path (default: overwrite in place)",
+    )
+    ci_normalize_parser.set_defaults(func=_cmd_ci_normalize)
+
+    # Handle bare `forkline ci` with no subcommand
+    ci_parser.set_defaults(func=lambda args: (ci_parser.print_help(), sys.exit(1)))
 
     args = parser.parse_args(argv)
     if hasattr(args, "func"):
