@@ -190,7 +190,9 @@ def _cmd_ci_record(args: argparse.Namespace) -> None:
     script_args: list[str] = getattr(args, "script_args", None) or []
     if script_args and script_args[0] == "--":
         script_args = script_args[1:]
-    offline = getattr(args, "offline", False) or os.environ.get("FORKLINE_OFFLINE") == "1"
+    offline = (
+        getattr(args, "offline", False) or os.environ.get("FORKLINE_OFFLINE") == "1"
+    )
     code = ci_record(
         args.entrypoint,
         args.out,
@@ -222,7 +224,9 @@ def _cmd_ci_check(args: argparse.Namespace) -> None:
     script_args: list[str] = getattr(args, "script_args", None) or []
     if script_args and script_args[0] == "--":
         script_args = script_args[1:]
-    offline = getattr(args, "offline", True) or os.environ.get("FORKLINE_OFFLINE") == "1"
+    offline = (
+        getattr(args, "offline", True) or os.environ.get("FORKLINE_OFFLINE") == "1"
+    )
     code = ci_check(
         args.entrypoint,
         args.expected,

@@ -21,10 +21,9 @@ import os
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from .ci.commands import ci_record, _diff_event_lists
+from .ci.commands import _diff_event_lists, ci_record
 from .ci.exitcodes import EXIT_SUCCESS
 from .ci.normalize import normalize_artifact
-from .ci.offline import offline_context
 
 
 class ArtifactDiffError(AssertionError):

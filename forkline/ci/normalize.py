@@ -9,15 +9,25 @@ from __future__ import annotations
 
 import copy
 import json
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set
 
-TIMESTAMP_FIELDS: Set[str] = frozenset({
-    "ts", "started_at", "ended_at", "created_at", "timestamp",
-})
+TIMESTAMP_FIELDS: Set[str] = frozenset(
+    {
+        "ts",
+        "started_at",
+        "ended_at",
+        "created_at",
+        "timestamp",
+    }
+)
 
-UNSTABLE_METADATA_FIELDS: Set[str] = frozenset({
-    "python_version", "platform", "cwd",
-})
+UNSTABLE_METADATA_FIELDS: Set[str] = frozenset(
+    {
+        "python_version",
+        "platform",
+        "cwd",
+    }
+)
 
 NORMALIZED_TIMESTAMP = "2000-01-01T00:00:00+00:00"
 

@@ -26,7 +26,7 @@ from .exitcodes import (
     EXIT_USAGE_ERROR,
 )
 from .normalize import normalize_artifact
-from .offline import ForklineOfflineError, enable_offline_mode, offline_context
+from .offline import ForklineOfflineError, enable_offline_mode
 
 
 def ci_record(
@@ -158,14 +158,20 @@ def ci_replay(
     for ev in artifact.events:
         type_counts[ev.type] = type_counts.get(ev.type, 0) + 1
 
-    print(json.dumps({
-        "status": "ok",
-        "run_id": artifact.run_id,
-        "entrypoint": artifact.entrypoint,
-        "schema_version": artifact.schema_version,
-        "event_count": event_count,
-        "event_types": type_counts,
-    }, indent=2, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "status": "ok",
+                "run_id": artifact.run_id,
+                "entrypoint": artifact.entrypoint,
+                "schema_version": artifact.schema_version,
+                "event_count": event_count,
+                "event_types": type_counts,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
 
     return EXIT_SUCCESS
 
@@ -206,11 +212,17 @@ def ci_diff(
 
     if diff_result["identical"]:
         if output_format == "json":
-            print(json.dumps({
-                "identical": True,
-                "expected_events": len(expected_events),
-                "actual_events": len(actual_events),
-            }, indent=2, sort_keys=True))
+            print(
+                json.dumps(
+                    {
+                        "identical": True,
+                        "expected_events": len(expected_events),
+                        "actual_events": len(actual_events),
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
         else:
             print("No differences detected.")
         return EXIT_SUCCESS
@@ -322,7 +334,10 @@ def _diff_event_lists(
                 "payload_diff": payload_diff,
                 "total_expected": len(expected),
                 "total_actual": len(actual),
-                "suggestion": "Re-record baseline: forkline ci record --entrypoint <script> --out <path>",
+                "suggestion": (
+                    "Re-record baseline: forkline ci record"
+                    " --entrypoint <script> --out <path>"
+                ),
             }
 
     if len(expected) != len(actual):
@@ -332,7 +347,10 @@ def _diff_event_lists(
             "reason": "event_count_mismatch",
             "total_expected": len(expected),
             "total_actual": len(actual),
-            "suggestion": "Re-record baseline: forkline ci record --entrypoint <script> --out <path>",
+            "suggestion": (
+                "Re-record baseline: forkline ci record"
+                " --entrypoint <script> --out <path>"
+            ),
         }
 
     return {

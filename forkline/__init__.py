@@ -11,7 +11,6 @@ from .ci import (
     normalize_artifact,
     offline_context,
 )
-from .testing import ArtifactDiffError, assert_no_diff
 from .core import (
     # First-divergence diffing
     DivergenceType,
@@ -74,6 +73,7 @@ from .core.replay import (
     replay_mode,
 )
 from .storage import RunRecorder, SQLiteStore
+from .testing import ArtifactDiffError, assert_no_diff
 from .tracer import Tracer
 from .version import (
     DEFAULT_FORKLINE_VERSION,

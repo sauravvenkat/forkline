@@ -122,9 +122,13 @@ class TestExitCodes(unittest.TestCase):
 
     def test_all_distinct(self):
         codes = [
-            EXIT_SUCCESS, EXIT_DIFF_DETECTED, EXIT_USAGE_ERROR,
-            EXIT_REPLAY_FAILED, EXIT_OFFLINE_VIOLATION,
-            EXIT_ARTIFACT_ERROR, EXIT_INTERNAL_ERROR,
+            EXIT_SUCCESS,
+            EXIT_DIFF_DETECTED,
+            EXIT_USAGE_ERROR,
+            EXIT_REPLAY_FAILED,
+            EXIT_OFFLINE_VIOLATION,
+            EXIT_ARTIFACT_ERROR,
+            EXIT_INTERNAL_ERROR,
         ]
         self.assertEqual(len(codes), len(set(codes)))
 
@@ -365,13 +369,15 @@ class TestCIReplay(_TempDirMixin, unittest.TestCase):
 
     def test_replay_strict_empty_payload(self):
         artifact = self._make_artifact()
-        artifact["events"].append({
-            "event_id": 2,
-            "run_id": "test-run-001",
-            "ts": "2026-01-01T00:00:02+00:00",
-            "type": "output",
-            "payload": {},
-        })
+        artifact["events"].append(
+            {
+                "event_id": 2,
+                "run_id": "test-run-001",
+                "ts": "2026-01-01T00:00:02+00:00",
+                "type": "output",
+                "payload": {},
+            }
+        )
         path = self._write_artifact("strict.json", artifact)
         with patch("sys.stderr", new_callable=StringIO):
             code = ci_replay(path, strict=True)
@@ -379,13 +385,15 @@ class TestCIReplay(_TempDirMixin, unittest.TestCase):
 
     def test_replay_not_strict_allows_empty_payload(self):
         artifact = self._make_artifact()
-        artifact["events"].append({
-            "event_id": 2,
-            "run_id": "test-run-001",
-            "ts": "2026-01-01T00:00:02+00:00",
-            "type": "output",
-            "payload": {},
-        })
+        artifact["events"].append(
+            {
+                "event_id": 2,
+                "run_id": "test-run-001",
+                "ts": "2026-01-01T00:00:02+00:00",
+                "type": "output",
+                "payload": {},
+            }
+        )
         path = self._write_artifact("lax.json", artifact)
         with patch("sys.stdout", new_callable=StringIO):
             code = ci_replay(path, strict=False)
@@ -457,13 +465,15 @@ class TestCIDiff(_TempDirMixin, unittest.TestCase):
     def test_diff_event_count_mismatch(self):
         expected_art = self._make_artifact()
         actual_art = self._make_artifact()
-        actual_art["events"].append({
-            "event_id": 2,
-            "run_id": "test-run-001",
-            "ts": "2026-01-01T00:00:02+00:00",
-            "type": "system",
-            "payload": {"msg": "extra"},
-        })
+        actual_art["events"].append(
+            {
+                "event_id": 2,
+                "run_id": "test-run-001",
+                "ts": "2026-01-01T00:00:02+00:00",
+                "type": "system",
+                "payload": {"msg": "extra"},
+            }
+        )
         expected = self._write_artifact("expected.json", expected_art)
         actual = self._write_artifact("actual.json", actual_art)
         with patch("sys.stdout", new_callable=StringIO) as out:
@@ -553,7 +563,9 @@ class TestCICheck(_TempDirMixin, unittest.TestCase):
 
     def test_check_fail_on_behavior_change(self):
         """Behavior change must produce exit code 1."""
-        script_v1 = self._write_script("v1.py", """\
+        script_v1 = self._write_script(
+            "v1.py",
+            """\
             import os, json
             db = os.environ.get("FORKLINE_DB", "runs.db")
             run_id = os.environ.get("FORKLINE_RUN_ID", "")
@@ -561,18 +573,21 @@ class TestCICheck(_TempDirMixin, unittest.TestCase):
                 import sqlite3
                 conn = sqlite3.connect(db)
                 conn.execute(
-                    "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)",
+                "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)",
                     (run_id, "2026-01-01T00:00:00+00:00", "output",
                      json.dumps({"result": "v1"})),
                 )
                 conn.commit()
                 conn.close()
-        """)
+        """,
+        )
         expected_path = os.path.join(self.tmpdir, "expected.run.json")
         with patch("sys.stderr", new_callable=StringIO):
             ci_record(script_v1, expected_path, offline=False)
 
-        script_v2 = self._write_script("v2.py", """\
+        script_v2 = self._write_script(
+            "v2.py",
+            """\
             import os, json
             db = os.environ.get("FORKLINE_DB", "runs.db")
             run_id = os.environ.get("FORKLINE_RUN_ID", "")
@@ -580,13 +595,14 @@ class TestCICheck(_TempDirMixin, unittest.TestCase):
                 import sqlite3
                 conn = sqlite3.connect(db)
                 conn.execute(
-                    "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)",
+                "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)",
                     (run_id, "2026-01-01T00:00:00+00:00", "output",
                      json.dumps({"result": "v2_changed"})),
                 )
                 conn.commit()
                 conn.close()
-        """)
+        """,
+        )
         with patch("sys.stderr", new_callable=StringIO):
             with patch("sys.stdout", new_callable=StringIO):
                 code = ci_check(script_v2, expected_path, offline=False)
@@ -670,26 +686,28 @@ class TestEndToEnd(_TempDirMixin, unittest.TestCase):
     """Full integration test: record, confirm pass, change, confirm fail."""
 
     def test_full_cycle(self):
-        script = self._write_script("flow.py", """\
+        script = self._write_script(
+            "flow.py",
+            """\
             import os, json
             db = os.environ.get("FORKLINE_DB", "runs.db")
             run_id = os.environ.get("FORKLINE_RUN_ID", "")
+            SQL = "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)"
             if db and run_id:
                 import sqlite3
                 conn = sqlite3.connect(db)
-                conn.execute(
-                    "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)",
+                conn.execute(SQL,
                     (run_id, "2026-01-01T00:00:00+00:00", "input",
                      json.dumps({"prompt": "what is 2+2?"})),
                 )
-                conn.execute(
-                    "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)",
+                conn.execute(SQL,
                     (run_id, "2026-01-01T00:00:01+00:00", "output",
                      json.dumps({"answer": "4"})),
                 )
                 conn.commit()
                 conn.close()
-        """)
+        """,
+        )
 
         # Step 1: Record baseline
         baseline_path = os.path.join(self.tmpdir, "baseline.run.json")
@@ -709,26 +727,28 @@ class TestEndToEnd(_TempDirMixin, unittest.TestCase):
         self.assertEqual(code, EXIT_SUCCESS)
 
         # Step 4: Modified script fails check with exit code 1
-        script_v2 = self._write_script("flow_v2.py", """\
+        script_v2 = self._write_script(
+            "flow_v2.py",
+            """\
             import os, json
             db = os.environ.get("FORKLINE_DB", "runs.db")
             run_id = os.environ.get("FORKLINE_RUN_ID", "")
+            SQL = "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)"
             if db and run_id:
                 import sqlite3
                 conn = sqlite3.connect(db)
-                conn.execute(
-                    "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)",
+                conn.execute(SQL,
                     (run_id, "2026-01-01T00:00:00+00:00", "input",
                      json.dumps({"prompt": "what is 2+2?"})),
                 )
-                conn.execute(
-                    "INSERT INTO events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)",
+                conn.execute(SQL,
                     (run_id, "2026-01-01T00:00:01+00:00", "output",
                      json.dumps({"answer": "5"})),
                 )
                 conn.commit()
                 conn.close()
-        """)
+        """,
+        )
         with patch("sys.stderr", new_callable=StringIO):
             with patch("sys.stdout", new_callable=StringIO) as out:
                 code = ci_check(script_v2, baseline_path, offline=False)
@@ -773,7 +793,9 @@ class TestExitCodeScenarios(_TempDirMixin, unittest.TestCase):
 
     def test_exit_2_usage_error(self):
         with patch("sys.stderr", new_callable=StringIO):
-            self.assertEqual(ci_record("/no/such/file.py", "/tmp/out.json"), EXIT_USAGE_ERROR)
+            self.assertEqual(
+                ci_record("/no/such/file.py", "/tmp/out.json"), EXIT_USAGE_ERROR
+            )
 
     def test_exit_3_replay_failed(self):
         script = self._write_script("fail.py", "import sys; sys.exit(1)\n")
