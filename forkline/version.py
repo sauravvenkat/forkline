@@ -13,7 +13,7 @@ Schema versioning policy:
 """
 
 # Library version (matches pyproject.toml)
-FORKLINE_VERSION = "0.3.0"
+FORKLINE_VERSION = "0.5.0"
 
 # Current schema version for new artifacts.
 # This is the version stamped on every artifact written by this release.

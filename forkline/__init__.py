@@ -1,4 +1,16 @@
 from .artifact import ArtifactEvent, RunArtifact, SchemaVersionError, migrate_artifact
+from .ci import (
+    EXIT_ARTIFACT_ERROR,
+    EXIT_DIFF_DETECTED,
+    EXIT_INTERNAL_ERROR,
+    EXIT_OFFLINE_VIOLATION,
+    EXIT_REPLAY_FAILED,
+    EXIT_SUCCESS,
+    EXIT_USAGE_ERROR,
+    ForklineOfflineError,
+    normalize_artifact,
+    offline_context,
+)
 from .core import (
     # First-divergence diffing
     DivergenceType,
@@ -61,6 +73,7 @@ from .core.replay import (
     replay_mode,
 )
 from .storage import RunRecorder, SQLiteStore
+from .testing import ArtifactDiffError, assert_no_diff
 from .tracer import Tracer
 from .version import (
     DEFAULT_FORKLINE_VERSION,
@@ -141,4 +154,18 @@ __all__ = [
     "compare_steps",
     # Legacy
     "replay",
+    # CI integration
+    "EXIT_SUCCESS",
+    "EXIT_DIFF_DETECTED",
+    "EXIT_USAGE_ERROR",
+    "EXIT_REPLAY_FAILED",
+    "EXIT_OFFLINE_VIOLATION",
+    "EXIT_ARTIFACT_ERROR",
+    "EXIT_INTERNAL_ERROR",
+    "ForklineOfflineError",
+    "normalize_artifact",
+    "offline_context",
+    # Testing helpers
+    "assert_no_diff",
+    "ArtifactDiffError",
 ]

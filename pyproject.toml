@@ -17,7 +17,7 @@ authors = [
 forkline = "forkline.cli:main"
 
 [tool.setuptools]
-packages = ["forkline", "forkline.artifact", "forkline.cli", "forkline.core", "forkline.storage", "forkline.tracer"]
+packages = ["forkline", "forkline.artifact", "forkline.ci", "forkline.cli", "forkline.core", "forkline.storage", "forkline.tracer"]
 
 [tool.black]
 line-length = 88

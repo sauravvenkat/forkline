@@ -31,10 +31,10 @@ Forkline is built to tell you **where**, **when**, and **why**.
 Forkline allows you to:
 
 - **Record** an agent run as a deterministic, local artifact
-- **Replay** that run without re-invoking the LLM ✅
-- **Diff** two runs and detect the **first point of divergence** ✅
+- **Replay** that run without re-invoking the LLM
+- **Diff** two runs and detect the **first point of divergence**
 - **Capture tool calls** safely with deterministic redaction
-- **Use agent workflows in CI** without network calls or flakiness
+- **Gate CI builds on behavioral identity** — no network, no flake, no ambiguity
 
 This turns agent behavior into something you can reason about like code.
 
@@ -117,6 +117,10 @@ forkline diff <run_id_a> <run_id_b> --format json
 # Use a custom database path
 forkline run --db myproject.db examples/minimal.py
 forkline list --db myproject.db
+
+# CI integration (see "CI Integration" below)
+forkline ci record --entrypoint examples/my_flow.py --out baseline.run.json
+forkline ci check --entrypoint examples/my_flow.py --expected baseline.run.json
 ```
 
 ### Example: catching LLM nondeterminism with Ollama Qwen3
@@ -196,6 +200,89 @@ See [`QUICKSTART_RECORDING_V0.md`](docs/QUICKSTART_RECORDING_V0.md) for recordin
 
 ---
 
+## CI Integration
+
+Forkline ships with a dedicated CI layer that turns agent behavior into a build gate. If behavior changes, the build fails — deterministically, offline, with a clear diff.
+
+### Record a baseline, check it in CI
+
+```bash
+# Record a baseline artifact (local dev)
+forkline ci record --entrypoint examples/my_flow.py --out tests/testdata/my_flow.run.json
+
+# Commit it to version control
+git add tests/testdata/my_flow.run.json
+
+# In CI: check that behavior hasn't changed
+forkline ci check --entrypoint examples/my_flow.py --expected tests/testdata/my_flow.run.json
+# Exit 0 = identical behavior, Exit 1 = behavior changed
+```
+
+### CI commands
+
+```bash
+# Record a normalized, committable artifact
+forkline ci record --entrypoint <script> --out <path> [--offline]
+
+# Validate an artifact's schema and structure
+forkline ci replay --artifact <path> [--strict]
+
+# Diff two artifacts (exit 1 on divergence)
+forkline ci diff --expected <path> --actual <path> [--format json|text]
+
+# All-in-one: record actual, diff against expected
+forkline ci check --entrypoint <script> --expected <path> [--offline]
+
+# Normalize an artifact for stable diffs
+forkline ci normalize <artifact> [--out <path>]
+```
+
+### Offline mode
+
+CI runs enforce a hard no-network guarantee. When `--offline` is set (or `FORKLINE_OFFLINE=1`), any network access raises `ForklineOfflineError` immediately — no hangs, no timeouts, deterministic failure.
+
+### Exit codes
+
+Forkline CI uses a strict, stable exit code contract:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success, no diff |
+| `1` | Diff detected (fail the build) |
+| `2` | Usage/config error |
+| `3` | Replay failed |
+| `4` | Offline violation |
+| `5` | Artifact/schema error |
+| `6` | Internal error |
+
+### Python test helper
+
+```python
+from forkline.testing import assert_no_diff
+
+def test_my_flow():
+    assert_no_diff(
+        entrypoint="examples/my_flow.py",
+        expected_artifact="tests/testdata/my_flow.run.json",
+        offline=True,
+    )
+```
+
+### GitHub Actions
+
+```yaml
+- name: Check for behavioral diffs
+  run: |
+    forkline ci check \
+      --entrypoint examples/my_flow.py \
+      --expected tests/testdata/my_flow.run.json \
+      --offline
+```
+
+For the full CI guide — artifact normalization, re-recording baselines, repo layout, and more — see [`docs/ci.md`](docs/ci.md).
+
+---
+
 ## Artifact Stability Guarantee
 
 Forkline guarantees replay compatibility across minor versions. Breaking changes require a major version increment and migration support.
@@ -271,8 +358,8 @@ They live in terminals, CI pipelines, local machines, and code reviews — not d
 CLI commands are composable, automatable, and repeatable.
 
 This makes Forkline usable in:
-- CI pipelines
-- test suites
+- CI pipelines (`forkline ci check` gates merges on behavioral identity)
+- test suites (`assert_no_diff` for snapshot-style testing)
 - local debugging loops
 - regression checks
 
@@ -437,7 +524,7 @@ The v0 series focuses on **correctness and determinism**, not polish.
 2. ✅ Offline replay engine  
 3. ✅ First-divergence diffing  
 4. ✅ CLI (`run`, `list`, `replay`, `diff`)  
-5. CI-friendly deterministic mode  
+5. ✅ CI integration (`ci record`, `ci replay`, `ci diff`, `ci check`, offline enforcement, exit codes)  
 
 The canonical roadmap and design contract live here:
 
